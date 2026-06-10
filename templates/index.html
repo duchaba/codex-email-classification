@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f4ff">
+  <title>Inbox Atelier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive-fixes.css') }}">
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Inbox Atelier home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><rect x="7" y="12" width="34" height="28" rx="10"/><path d="M14 21l10 7 10-7"/><path d="M24 12V7m-4 0h8"/></svg>
+        </span>
+        <span><strong>Inbox Atelier</strong><small>Your personal AI mail studio</small></span>
+      </a>
+      <div class="header-meta">
+        <div class="date-block"><small>Today</small><strong id="todayText">{{ initial_data.today }}</strong></div>
+        <span class="mode-pill" id="modePill"><i></i><span>Synthetic demo</span></span>
+        <button class="icon-button" id="setupButton" aria-label="Open setup" title="Setup">
+          <svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.5 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.5a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.5 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.16.38.37.73.6 1 .3.34.69.55 1.1.6h.09v4h-.09A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar card">
+        <div class="sidebar-heading"><span>Categories</span><button id="collapseSidebar" aria-label="Collapse categories">‹</button></div>
+        <button class="category-row active" data-category="all">
+          <span class="category-icon all-icon">✦</span><span class="category-label">All inbox</span><strong id="allCount">0</strong>
+        </button>
+        <nav id="categoryList" aria-label="Email categories"></nav>
+        <div class="sidebar-footer">
+          <div class="mini-robot" aria-hidden="true">
+            <svg viewBox="0 0 120 92"><path class="shadow" d="M19 78c13-11 68-14 84 0 9 9-4 13-39 13S8 87 19 78Z"/><path class="body" d="M31 41h56v37H31z"/><rect class="head" x="20" y="15" width="78" height="48" rx="19"/><path class="line" d="M59 15V8m-7 0h14"/><circle class="eye" cx="44" cy="38" r="5"/><circle class="eye" cx="75" cy="38" r="5"/><path class="smile" d="M48 50c7 5 15 5 22 0"/><path class="arm" d="M30 52 17 66m70-14 15 12"/></svg>
+          </div>
+          <p><strong>Your inbox, thoughtfully sorted.</strong><br><span id="modelText">Mock agent is ready</span></p>
+        </div>
+      </aside>
+
+      <section class="content">
+        <section class="welcome-card card">
+          <div>
+            <span class="eyebrow">DAILY BRIEFING</span>
+            <h1>Good <span id="dayPart">morning</span>, your inbox is ready.</h1>
+            <p id="welcomeCopy">Your AI crew has organized today’s messages into a calm, focused view.</p>
+            <button class="engine-status mock" id="engineStatus" type="button" aria-label="Open classification engine setup">
+              <span class="engine-status-icon" id="engineStatusIcon">R</span>
+              <span><small>Classification engine</small><strong id="engineStatusTitle">Mock rules</strong><em id="engineStatusCopy">Local deterministic rules, no AI model</em></span>
+              <span class="engine-status-action">Change in Setup →</span>
+            </button>
+            <div class="welcome-actions">
+              <button class="button primary" id="rerunTopButton"><span>✦</span> Run classification</button>
+              <label class="button secondary upload-label">Upload CSV<input id="csvInput" type="file" accept=".csv" hidden></label>
+            </div>
+          </div>
+          <div class="architect-art" aria-hidden="true">
+            <svg viewBox="0 0 260 175">
+              <path class="blob" d="M34 91c0-43 37-70 84-62 29-28 87-7 89 37 34 22 18 77-27 79H67c-42-1-57-31-33-54Z"/>
+              <path class="desk" d="M43 135h177v10H43z"/><path class="paper" d="m67 97 62-18 13 45-62 18z"/><path class="paper-line" d="m82 103 39-11m-35 22 39-11m-35 21 31-9"/>
+              <rect class="bot-body" x="153" y="78" width="53" height="58" rx="18"/><rect class="bot-head" x="142" y="43" width="73" height="53" rx="21"/><path class="bot-line" d="M179 43V30m-8 0h16"/><circle class="bot-eye" cx="164" cy="68" r="5"/><circle class="bot-eye" cx="194" cy="68" r="5"/><path class="bot-smile" d="M166 81c8 6 19 6 27 0"/><path class="bot-arm" d="m154 105-27 14m79-13 18-14"/><path class="pencil" d="m119 120 25-12 3 6-25 12z"/>
+            </svg>
+          </div>
+        </section>
+
+        <section class="stats-grid">
+          <article class="stat-card card lavender"><div class="stat-icon">✉</div><div><small>Processed today</small><strong id="totalStat">0</strong><span>emails organized</span></div></article>
+          <article class="stat-card card mint"><div class="stat-icon">↗</div><div><small>Top category</small><strong id="topStat">—</strong><span id="topStatCount">No messages yet</span></div></article>
+          <article class="stat-card card peach"><div class="stat-icon">!</div><div><small>Needs attention</small><strong id="urgentStat">0</strong><span>high urgency</span></div></article>
+          <article class="stat-card card blue"><div class="stat-icon">?</div><div><small>Needs review</small><strong id="reviewStat">0</strong><span>low confidence</span></div></article>
+        </section>
+
+        <section class="overview-grid">
+          <article class="chart-card card">
+            <div class="card-heading"><div><span class="eyebrow">INBOX SHAPE</span><h2>Category overview</h2></div><div class="segmented"><button class="active" data-chart="pie">Pie</button><button data-chart="radar">Radar</button></div></div>
+            <p class="chart-description">Distribution of today’s classified messages.</p>
+            <div class="chart-wrap"><canvas id="categoryChart"></canvas><div id="chartCenter" class="chart-center"><strong>0</strong><span>emails</span></div></div>
+            <div class="chart-legend" id="chartLegend"></div>
+          </article>
+          <article class="brief-card card">
+            <div class="card-heading"><div><span class="eyebrow">AT A GLANCE</span><h2>Today’s brief</h2></div><span class="sparkle">✦</span></div>
+            <div id="briefList" class="brief-list"></div>
+            <button class="text-button" id="viewUrgentButton">Review priority messages <span>→</span></button>
+          </article>
+        </section>
+
+        <section class="email-panel card">
+          <div class="email-panel-header">
+            <div><span class="eyebrow">MESSAGE REVIEW</span><h2 id="emailPanelTitle">All inbox</h2><p id="emailPanelSubtitle">Every classified message from today</p></div>
+            <div class="email-tools"><label class="search-box"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="emailSearch" type="search" placeholder="Search messages"></label><select id="confidenceFilter" aria-label="Filter by confidence"><option value="all">All confidence</option><option value="low">Needs review</option><option value="high">High confidence</option></select></div>
+          </div>
+          <div id="emailList" class="email-list"></div>
+          <div class="list-footer"><span id="visibleCount"></span><button class="button secondary small" id="showMoreButton">Show more</button></div>
+        </section>
+
+        <section class="prompt-panel card">
+          <div class="prompt-heading"><div class="prompt-icon">{ }</div><div><span class="eyebrow">AGENT WORKSHOP</span><h2>Classification prompt</h2><p>Shape how your assistant thinks. Required output fields are protected.</p></div><span class="version-pill" id="promptVersion">Version 1</span></div>
+          <textarea id="promptTextarea" spellcheck="false" aria-label="Classification prompt"></textarea>
+          <div class="prompt-actions"><span id="promptStatus">Changes create a new local version.</span><div><button class="button ghost" id="resetPromptButton">Reset default</button><button class="button secondary" id="savePromptButton">Save prompt</button><button class="button primary" id="rerunPromptButton">Save & rerun</button></div></div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="setupDialog" class="setup-dialog">
+    <form method="dialog" class="dialog-shell">
+      <button class="dialog-close" value="cancel" aria-label="Close">×</button>
+      <span class="eyebrow">LOCAL SETUP</span><h2>Connect your inbox intelligence</h2><p>Credentials stay on this computer in Git-ignored local files.</p>
+      <div class="setup-section"><div><strong>OpenAI classification</strong><span id="openaiConnectionText">Using deterministic mock mode</span></div><label>API key<input id="apiKeyInput" type="password" placeholder="sk-…" autocomplete="off"></label><label>Model<input id="modelInput" value="gpt-4.1-mini"></label><button type="button" class="button primary" id="saveApiKeyButton">Save locally</button></div>
+      <div class="setup-section"><div><strong>Gmail inbox</strong><span id="gmailConnectionText">OAuth is not connected</span></div><p class="setup-note">Place your Google desktop OAuth file at <code>data/client_secret.json</code>, then connect.</p><a class="button secondary" id="gmailConnectButton" href="/api/gmail/connect">Connect Gmail</a></div>
+      <div class="setup-section"><div><strong>Data mode</strong><span>Choose the source for the next run</span></div><div class="mode-options"><button type="button" class="mode-option active" data-mode="synthetic">Synthetic demo<small>200 local messages</small></button><button type="button" class="mode-option" data-mode="upload">Uploaded CSV<small>Your latest upload</small></button><button type="button" class="mode-option" data-mode="gmail">Live Gmail<small>Today only</small></button></div></div>
+    </form>
+  </dialog>
+
+  <div id="toastRegion" class="toast-region" aria-live="polite"></div>
+  <script>window.INITIAL_DATA = {{ initial_data|tojson }};</script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

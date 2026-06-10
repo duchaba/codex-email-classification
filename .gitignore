@@ -1,0 +1,14 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+data/config.json
+data/audit_log.json
+data/prompt_versions.json
+data/classification_state.json
+data/synthetic_emails.json
+data/token.json
+data/client_secret.json
+data/uploads/*
+!data/uploads/.gitkeep
