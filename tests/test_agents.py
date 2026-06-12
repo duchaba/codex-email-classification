@@ -7,6 +7,7 @@ import pytest
 from agents.category_regroup_agent import CategoryRegroupAgent
 from agents.email_classifier_agent import EmailClassifierAgent
 from agents.email_fetch_agent import EmailFetchAgent
+from agents.email_preprocess_agent import EmailPreprocessAgent
 from agents.ground_truth_test_agent import GroundTruthTestAgent
 from agents.prompt_manager_agent import DEFAULT_PROMPT, PromptManagerAgent
 from services.gmail_service import GmailService
@@ -103,6 +104,23 @@ def test_csv_parsing_and_validation(tmp_path):
         EmailFetchAgent(tmp_path / "synthetic.json").load_csv(malformed)
 
 
+def test_preprocess_derives_preview_from_full_body_without_changing_ground_truth():
+    source = sample_email(
+        body_preview="",
+        full_body_optional="Hello there. This is the complete email content for classification.",
+        category="",
+        subcategory="",
+        expected_category="Personal",
+        expected_subcategory="Friends",
+    )
+    result = EmailPreprocessAgent().process([source])[0]
+    assert result["body_preview"] == source["full_body_optional"]
+    assert result["category"] == ""
+    assert result["subcategory"] == ""
+    assert result["expected_category"] == "Personal"
+    assert result["expected_subcategory"] == "Friends"
+
+
 def test_synthetic_email_creation_is_deterministic(tmp_path):
     agent = EmailFetchAgent(tmp_path / "synthetic.json")
     records = agent.create_synthetic(200)
@@ -140,18 +158,24 @@ def test_classifier_cannot_overwrite_ground_truth_fields():
                     **emails[0],
                     "category": "Work",
                     "subcategory": "",
+                    "body_preview": "Changed by model",
+                    "full_body_optional": "Changed by model",
                     "expected_category": "Changed by model",
                     "expected_subcategory": "Changed by model",
                 }
             ]
 
     source = sample_email(
+        body_preview="Derived preview",
+        full_body_optional="Complete original body",
         expected_category="Personal",
         expected_subcategory="Banking",
     )
     result = EmailClassifierAgent(FakeOpenAIService(), mock_mode=False).classify([source], DEFAULT_PROMPT)[0]
     assert result["expected_category"] == "Personal"
     assert result["expected_subcategory"] == "Banking"
+    assert result["body_preview"] == "Derived preview"
+    assert result["full_body_optional"] == "Complete original body"
 
 
 def test_classifier_rejects_multiple_categories_and_duplicate_results():

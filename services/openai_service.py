@@ -30,6 +30,7 @@ class OpenAIService:
                     "sender_name": email.get("sender_name", ""),
                     "subject": email["subject"],
                     "body_preview": email.get("body_preview", ""),
+                    "full_body_optional": email.get("full_body_optional", "")[:5000],
                 }
                 for email in batch
             ]
@@ -71,4 +72,3 @@ class OpenAIService:
             else:
                 raise RuntimeError(f"OpenAI classification failed after retries: {last_error}")
         return results
-

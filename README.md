@@ -1,6 +1,6 @@
 # Inbox Atelier
 
-A local, single-user email classification dashboard. It starts with 200 deterministic synthetic emails and can switch to a CSV upload or today's Gmail inbox. Mock classification works without external credentials.
+A local, single-user email classification dashboard. It includes a tracked synthetic fixture and can switch to a CSV upload or today's Gmail inbox. Mock classification works without external credentials.
 
 ## Run locally
 
@@ -19,7 +19,8 @@ The **Test Ground Truth** tool compares the already saved synthetic predictions 
 
 ## Data modes
 
-- **Synthetic demo:** the tracked `data/synthetic_emails.json` fixture contains 200 records. Raw `category` and `subcategory` fields are blank; optional `expected_category` and `expected_subcategory` fields provide evaluation ground truth and are not sent to or read by the classifier. The app generates the file automatically only when it is missing.
+- **Synthetic demo:** the tracked `data/synthetic_emails.json` fixture contains 250 records, including 50 AI-generated full-body emails. Raw prediction fields are blank; `expected_category` and `expected_subcategory` provide evaluation ground truth and are not sent to or read by the classifier. The app generates the original fallback fixture automatically only when the file is missing.
+- When a raw email has a blank `body_preview`, clicking **Classify emails** derives the preview from `full_body_optional` before running mock or AI classification. The derived preview and predicted labels are saved in local classification state, not written back into the tracked raw fixture.
 - **Uploaded CSV:** requires at least 200 rows and the columns `sender_email` and `subject`. Other supported columns include `email_id`, `date`, `sender_name`, `body_preview`, and `full_body_optional`.
 - **Live Gmail:** fetches only messages whose timestamps fall on the current local calendar day.
 

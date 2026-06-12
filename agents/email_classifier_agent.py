@@ -42,7 +42,12 @@ class EmailClassifierAgent:
     def _preserve_ground_truth(source_emails, predictions):
         """Ground-truth labels are immutable evaluation data, never model output."""
         source_by_id = {email.get("email_id"): email for email in source_emails}
-        protected = ("expected_category", "expected_subcategory")
+        protected = (
+            "expected_category",
+            "expected_subcategory",
+            "body_preview",
+            "full_body_optional",
+        )
         preserved = []
         for prediction in predictions:
             source = source_by_id.get(prediction.get("email_id"), {})
