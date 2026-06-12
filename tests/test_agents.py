@@ -92,7 +92,25 @@ def test_synthetic_email_creation_is_deterministic(tmp_path):
     assert len(records) == 200
     assert len({record["email_id"] for record in records}) == 200
     assert {record["source_type"] for record in records} == {"synthetic"}
+    assert {record["category"] for record in records} == {""}
+    assert {record["subcategory"] for record in records} == {""}
+    assert all(record["expected_category"] for record in records)
     assert agent.load_synthetic()[0] == records[0]
+
+
+def test_expected_labels_do_not_influence_classification():
+    classifier = EmailClassifierAgent(mock_mode=True)
+    email = sample_email(
+        subject="Save 25% on your annual plan",
+        body_preview="Upgrade now to receive this discount offer.",
+        category="",
+        subcategory="",
+        expected_category="Spam",
+        expected_subcategory="",
+    )
+    classified = classifier.classify([email], DEFAULT_PROMPT)[0]
+    assert classified["category"] == "Social Media"
+    assert classified["subcategory"] == "Sales & Marketing"
 
 
 def test_synthetic_file_is_only_generated_when_missing(tmp_path):

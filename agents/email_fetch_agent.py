@@ -9,12 +9,12 @@ class EmailFetchAgent:
     REQUIRED_CSV_FIELDS = {"sender_email", "subject"}
 
     TEMPLATES = [
-        ("Work", "", "Maya Chen", "maya@elvtr.com", "Course launch review needed", "Please review the launch checklist and reply before 3 PM today."),
-        ("Work", "", "Alex Rivera", "alex@genai-incubator.com", "Mentor session action items", "Two decisions need your approval before tomorrow's mentor session."),
+        ("Urgent Priority", "Work", "Maya Chen", "maya@elvtr.com", "Course launch review needed", "Please review the launch checklist and reply before 3 PM today."),
+        ("Urgent Priority", "Work", "Alex Rivera", "alex@genai-incubator.com", "Mentor session action items", "Two decisions need your approval before tomorrow's mentor session."),
         ("Social Media", "", "LinkedIn", "messages-noreply@linkedin.com", "You appeared in 8 searches", "Your weekly profile activity and network highlights are ready."),
         ("Social Media", "News & Releases", "AI Brief", "daily@aibrief.news", "Open model releases this week", "A concise roundup of new AI models, papers, and product releases."),
         ("Social Media", "Sales & Marketing", "Notion", "team@mail.notion.so", "Save 25% on Notion AI", "Upgrade this week to receive an annual plan discount."),
-        ("Personal", "Bills & Utilities", "City Power", "billing@citypower.example", "Your electric bill is due", "A payment of $84.27 is due in five days."),
+        ("Urgent Priority", "Bills & Utilities", "City Power", "billing@citypower.example", "Your electric bill is due", "A payment of $84.27 is due in five days."),
         ("Social Media", "Invitations & Events", "Events Team", "invite@lu.ma", "Invitation: Practical Agents Meetup", "You are invited to an evening meetup next Thursday."),
         ("Personal", "Personal Projects", "Kickstarter", "no-reply@kickstarter.com", "A project you backed posted an update", "The creator shared manufacturing progress and a new ship date."),
         ("Personal", "Personal Projects", "UNO Alumni", "alumni@uno.edu", "Alumni author spotlight", "Submit your recent book or creative project for the alumni newsletter."),
@@ -46,8 +46,10 @@ class EmailFetchAgent:
                     "subject": f"{subject}{' #' + str(index + 1) if index >= len(self.TEMPLATES) else ''}",
                     "body_preview": preview,
                     "full_body_optional": "",
-                    "category": category,
-                    "subcategory": subcategory,
+                    "category": "",
+                    "subcategory": "",
+                    "expected_category": category,
+                    "expected_subcategory": subcategory,
                     "summary": "",
                     "confidence_score": "",
                     "source_type": "synthetic",

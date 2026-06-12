@@ -15,7 +15,7 @@ Open `http://127.0.0.1:5000`.
 
 ## Data modes
 
-- **Synthetic demo:** the tracked `data/synthetic_emails.json` fixture contains 200 records. The app generates it automatically only when the file is missing.
+- **Synthetic demo:** the tracked `data/synthetic_emails.json` fixture contains 200 records. Raw `category` and `subcategory` fields are blank; optional `expected_category` and `expected_subcategory` fields provide evaluation ground truth and are not sent to or read by the classifier. The app generates the file automatically only when it is missing.
 - **Uploaded CSV:** requires at least 200 rows and the columns `sender_email` and `subject`. Other supported columns include `email_id`, `date`, `sender_name`, `body_preview`, and `full_body_optional`.
 - **Live Gmail:** fetches only messages whose timestamps fall on the current local calendar day.
 
