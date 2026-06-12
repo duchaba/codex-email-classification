@@ -114,6 +114,30 @@ def test_expected_labels_do_not_influence_classification():
     assert classified["subcategory"] == "Sales & Marketing"
 
 
+def test_classifier_cannot_overwrite_ground_truth_fields():
+    class FakeOpenAIService:
+        is_configured = True
+
+        def classify(self, emails, _prompt):
+            return [
+                {
+                    **emails[0],
+                    "category": "Work",
+                    "subcategory": "",
+                    "expected_category": "Changed by model",
+                    "expected_subcategory": "Changed by model",
+                }
+            ]
+
+    source = sample_email(
+        expected_category="Personal",
+        expected_subcategory="Banking",
+    )
+    result = EmailClassifierAgent(FakeOpenAIService(), mock_mode=False).classify([source], DEFAULT_PROMPT)[0]
+    assert result["expected_category"] == "Personal"
+    assert result["expected_subcategory"] == "Banking"
+
+
 def test_ground_truth_agent_scores_and_builds_comparison_chart():
     source = [
         {"email_id": "1", "subject": "One", "expected_category": "Work", "expected_subcategory": ""},

@@ -92,6 +92,7 @@ def create_app(test_config=None):
             "raw_emails": raw_emails,
             "emails": classified,
             "last_run": started.isoformat(),
+            "classification_model": "mock-rules-v1" if classifier().mock_mode else openai_service.model,
             "status": status,
             "errors": errors,
         }
@@ -241,15 +242,23 @@ def create_app(test_config=None):
     def test_ground_truth():
         started = datetime.now().astimezone()
         try:
-            raw = fetch_agent.load_synthetic()
-            normalized = preprocess_agent.process(raw)
-            predictions = classifier().classify(normalized, prompt_agent.get()["prompt"])
-            predictions = regroup_agent.process(predictions)
+            state = load_state()
+            if state.get("mode") != "synthetic" or state.get("status") != "complete":
+                return jsonify(
+                    {"error": "Classify the synthetic emails first, then run Test Ground Truth."}
+                ), 409
+            raw = state.get("raw_emails") or []
+            predictions = state.get("emails") or []
+            if not predictions or any(not email.get("category") for email in predictions):
+                return jsonify(
+                    {"error": "Classify the synthetic emails first, then run Test Ground Truth."}
+                ), 409
             result = ground_truth_agent.evaluate(raw, predictions)
             result.update(
                 {
-                    "model": "mock-rules-v1" if classifier().mock_mode else openai_service.model,
-                    "mock_mode": classifier().mock_mode,
+                    "model": state.get("classification_model") or "saved-classification",
+                    "mock_mode": state.get("classification_model") == "mock-rules-v1",
+                    "reused_predictions": True,
                     "timestamp": started.isoformat(),
                 }
             )

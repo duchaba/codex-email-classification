@@ -11,8 +11,27 @@ class EmailClassifierAgent:
 
     def classify(self, emails, prompt):
         if not self.mock_mode and self.openai_service and self.openai_service.is_configured:
-            return self.openai_service.classify(emails, prompt)
-        return [self._mock_classify(email) for email in emails]
+            predictions = self.openai_service.classify(emails, prompt)
+        else:
+            predictions = [self._mock_classify(email) for email in emails]
+        return self._preserve_ground_truth(emails, predictions)
+
+    @staticmethod
+    def _preserve_ground_truth(source_emails, predictions):
+        """Ground-truth labels are immutable evaluation data, never model output."""
+        source_by_id = {email.get("email_id"): email for email in source_emails}
+        protected = ("expected_category", "expected_subcategory")
+        preserved = []
+        for prediction in predictions:
+            source = source_by_id.get(prediction.get("email_id"), {})
+            result = dict(prediction)
+            for field in protected:
+                if field in source:
+                    result[field] = source[field]
+                else:
+                    result.pop(field, None)
+            preserved.append(result)
+        return preserved
 
     def _mock_classify(self, email):
         text = " ".join(

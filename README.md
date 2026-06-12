@@ -15,6 +15,8 @@ Open `http://127.0.0.1:5000`.
 
 At startup the app loads the synthetic fixture but does not classify it automatically. Click **Classify emails** on the dashboard when you are ready to run the mock rules or configured AI model.
 
+The **Test Ground Truth** tool compares the already saved synthetic predictions with `expected_category` and `expected_subcategory`. It never runs classification again and never changes the expected labels.
+
 ## Data modes
 
 - **Synthetic demo:** the tracked `data/synthetic_emails.json` fixture contains 200 records. Raw `category` and `subcategory` fields are blank; optional `expected_category` and `expected_subcategory` fields provide evaluation ground truth and are not sent to or read by the classifier. The app generates the file automatically only when it is missing.

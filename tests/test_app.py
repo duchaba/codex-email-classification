@@ -63,6 +63,12 @@ def test_upload_requires_at_least_200_rows(client):
 
 
 def test_ground_truth_endpoint_scores_synthetic_fixture(client):
+    before_classification = client.post("/api/test-ground-truth")
+    assert before_classification.status_code == 409
+    assert "Classify the synthetic emails first" in before_classification.get_json()["error"]
+
+    classification = client.post("/api/rerun")
+    assert classification.status_code == 200
     response = client.post("/api/test-ground-truth")
     assert response.status_code == 200
     result = response.get_json()
@@ -72,3 +78,7 @@ def test_ground_truth_endpoint_scores_synthetic_fixture(client):
     assert result["exact_accuracy"] == 1.0
     assert result["mismatches"] == []
     assert len(result["chart"]["labels"]) == 5
+    assert result["reused_predictions"] is True
+
+    state_after_test = client.get("/api/status").get_json()
+    assert state_after_test["last_run"] == classification.get_json()["last_run"]
