@@ -18,11 +18,13 @@ def client(tmp_path):
     return app.test_client()
 
 
-def test_dashboard_and_status_bootstrap_200_emails(client):
+def test_dashboard_loads_raw_emails_without_classifying_at_startup(client):
     response = client.get("/")
     assert response.status_code == 200
     status = client.get("/api/status").get_json()
-    assert status["summary"]["total"] == 200
+    assert status["summary"]["total"] == 0
+    assert status["pending_count"] == 200
+    assert status["status"] == "awaiting_classification"
     assert status["mode"] == "synthetic"
     assert [category["name"] for category in status["categories"]] == [
         "Urgent Priority",
@@ -31,9 +33,16 @@ def test_dashboard_and_status_bootstrap_200_emails(client):
         "Social Media",
         "Spam",
     ]
-    assert status["chart"]["labels"] == [
-        category["name"] for category in status["categories"] if category["count"]
-    ]
+    assert status["chart"]["labels"] == []
+
+
+def test_user_can_classify_loaded_startup_emails(client):
+    response = client.post("/api/rerun")
+    assert response.status_code == 200
+    result = response.get_json()
+    assert result["status"] == "complete"
+    assert result["summary"]["total"] == 200
+    assert result["pending_count"] == 0
 
 
 def test_prompt_rejects_broken_output_contract(client):

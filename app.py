@@ -56,6 +56,21 @@ def create_app(test_config=None):
     def save_state(state):
         state_file.write_text(json.dumps(state, indent=2), encoding="utf-8")
 
+    def initialize_startup_state():
+        raw_emails = fetch_agent.load_synthetic()
+        state = {
+            "mode": "synthetic",
+            "raw_emails": raw_emails,
+            "emails": [],
+            "last_run": None,
+            "status": "awaiting_classification",
+            "errors": [],
+        }
+        save_state(state)
+        return state
+
+    initialize_startup_state()
+
     def classifier():
         return EmailClassifierAgent(openai_service, mock_mode=app.config["MOCK_MODE"] or not openai_service.is_configured)
 
@@ -116,6 +131,7 @@ def create_app(test_config=None):
         ]
         return {
             **state,
+            "pending_count": len(state.get("raw_emails", [])) if not emails else 0,
             "categories": categories,
             "summary": summary_agent.build(emails),
             "chart": chart_agent.build(emails),
@@ -133,10 +149,7 @@ def create_app(test_config=None):
 
     @app.route("/")
     def index():
-        state = load_state()
-        if not state.get("emails"):
-            state = run_classification(fetch_agent.load_synthetic(), "synthetic")
-        return render_template("index.html", initial_data=dashboard_payload(state))
+        return render_template("index.html", initial_data=dashboard_payload())
 
     @app.get("/api/status")
     def status():
