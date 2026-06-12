@@ -35,6 +35,27 @@
 .chart-wrap canvas { position: absolute; inset: 0; display: block; width: 100% !important; max-width: 100%; height: 100% !important; }
 .chart-legend { width: 100%; padding-top: 4px; }
 
+.ground-truth-section { grid-template-columns: 1fr; }
+.dialog-shell { max-height: min(88vh, 900px); overflow-y: auto; }
+.ground-truth-section > div:first-child { grid-column: 1; }
+.ground-truth-results { min-width: 0; padding-top: 4px; }
+.accuracy-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.accuracy-grid > div { padding: 11px; border: 1px solid #e7e2ed; border-radius: 12px; background: #faf8fc; }
+.accuracy-grid small, .accuracy-grid span { display: block; color: #918a9a; font-size: 9px; }
+.accuracy-grid strong { display: block; margin: 3px 0; font: 800 20px Manrope, sans-serif; color: #514a61; }
+.ground-truth-chart-wrap { position: relative; width: 100%; height: 230px; margin-top: 12px; overflow: hidden; border: 1px solid #eeeaf2; border-radius: 12px; background: #fff; }
+.ground-truth-chart-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ground-truth-legend { display: flex; justify-content: center; gap: 18px; padding: 8px; color: #777080; font-size: 9px; }
+.ground-truth-legend span { display: flex; align-items: center; gap: 5px; }
+.ground-truth-legend i { width: 9px; height: 9px; border-radius: 3px; }
+.ground-truth-legend .expected { background: #8175df; }
+.ground-truth-legend .predicted { background: #74b49b; }
+.ground-truth-mismatches { max-height: 160px; overflow-y: auto; }
+.ground-truth-mismatches h4 { margin: 6px 0; font: 800 11px Manrope, sans-serif; }
+.mismatch-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 8px 0; border-top: 1px solid #eeeaf2; font-size: 9px; }
+.mismatch-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mismatch-row span { color: #918a9a; text-align: right; }
+
 @media (max-width: 820px) {
   .workspace {
     grid-template-columns: minmax(0, 1fr);
@@ -59,4 +80,5 @@
   .engine-status-action { grid-column: 2; }
   .chart-card { min-height: 530px; }
   .chart-wrap { height: 300px; }
+  .accuracy-grid { grid-template-columns: 1fr; }
 }

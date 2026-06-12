@@ -13,6 +13,7 @@ from agents import (
     EmailClassifierAgent,
     EmailFetchAgent,
     EmailPreprocessAgent,
+    GroundTruthTestAgent,
     PromptManagerAgent,
     SummaryAgent,
 )
@@ -41,6 +42,7 @@ def create_app(test_config=None):
     regroup_agent = CategoryRegroupAgent()
     summary_agent = SummaryAgent()
     chart_agent = ChartAgent()
+    ground_truth_agent = GroundTruthTestAgent()
     state_file = data_dir / "classification_state.json"
 
     def load_state():
@@ -221,6 +223,38 @@ def create_app(test_config=None):
     @app.get("/api/audit-log")
     def audit_log():
         return jsonify({"runs": audit_agent.list()})
+
+    @app.post("/api/test-ground-truth")
+    def test_ground_truth():
+        started = datetime.now().astimezone()
+        try:
+            raw = fetch_agent.load_synthetic()
+            normalized = preprocess_agent.process(raw)
+            predictions = classifier().classify(normalized, prompt_agent.get()["prompt"])
+            predictions = regroup_agent.process(predictions)
+            result = ground_truth_agent.evaluate(raw, predictions)
+            result.update(
+                {
+                    "model": "mock-rules-v1" if classifier().mock_mode else openai_service.model,
+                    "mock_mode": classifier().mock_mode,
+                    "timestamp": started.isoformat(),
+                }
+            )
+            audit_agent.record(
+                mode="ground-truth-test",
+                prompt_version=prompt_agent.get()["version"],
+                model=result["model"],
+                emails_processed=len(predictions),
+                errors=[],
+                rerun=False,
+                category_accuracy=result["category_accuracy"],
+                subcategory_accuracy=result["subcategory_accuracy"],
+                exact_accuracy=result["exact_accuracy"],
+                duration_ms=int((datetime.now().astimezone() - started).total_seconds() * 1000),
+            )
+            return jsonify(result)
+        except (ValueError, RuntimeError) as exc:
+            return jsonify({"error": str(exc)}), 400
 
     @app.post("/api/setup/openai")
     def setup_openai():

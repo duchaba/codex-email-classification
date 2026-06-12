@@ -51,3 +51,15 @@ def test_upload_requires_at_least_200_rows(client):
     )
     assert response.status_code == 400
     assert "at least 200" in response.get_json()["error"]
+
+
+def test_ground_truth_endpoint_scores_synthetic_fixture(client):
+    response = client.post("/api/test-ground-truth")
+    assert response.status_code == 200
+    result = response.get_json()
+    assert result["total"] == 200
+    assert result["category_accuracy"] == 1.0
+    assert result["subcategory_accuracy"] == 1.0
+    assert result["exact_accuracy"] == 1.0
+    assert result["mismatches"] == []
+    assert len(result["chart"]["labels"]) == 5

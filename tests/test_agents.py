@@ -7,6 +7,7 @@ import pytest
 from agents.category_regroup_agent import CategoryRegroupAgent
 from agents.email_classifier_agent import EmailClassifierAgent
 from agents.email_fetch_agent import EmailFetchAgent
+from agents.ground_truth_test_agent import GroundTruthTestAgent
 from agents.prompt_manager_agent import DEFAULT_PROMPT, PromptManagerAgent
 from services.gmail_service import GmailService
 
@@ -111,6 +112,23 @@ def test_expected_labels_do_not_influence_classification():
     classified = classifier.classify([email], DEFAULT_PROMPT)[0]
     assert classified["category"] == "Social Media"
     assert classified["subcategory"] == "Sales & Marketing"
+
+
+def test_ground_truth_agent_scores_and_builds_comparison_chart():
+    source = [
+        {"email_id": "1", "subject": "One", "expected_category": "Work", "expected_subcategory": ""},
+        {"email_id": "2", "subject": "Two", "expected_category": "Personal", "expected_subcategory": "Banking"},
+    ]
+    predictions = [
+        {"email_id": "1", "category": "Work", "subcategory": ""},
+        {"email_id": "2", "category": "Personal", "subcategory": "Friends"},
+    ]
+    result = GroundTruthTestAgent().evaluate(source, predictions)
+    assert result["category_accuracy"] == 1.0
+    assert result["subcategory_accuracy"] == 0.5
+    assert result["exact_accuracy"] == 0.5
+    assert result["chart"]["expected"] == result["chart"]["predicted"]
+    assert result["mismatches"][0]["email_id"] == "2"
 
 
 def test_synthetic_file_is_only_generated_when_missing(tmp_path):
