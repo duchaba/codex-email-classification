@@ -1,4 +1,5 @@
 import csv
+import json
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -91,7 +92,18 @@ def test_synthetic_email_creation_is_deterministic(tmp_path):
     assert len(records) == 200
     assert len({record["email_id"] for record in records}) == 200
     assert {record["source_type"] for record in records} == {"synthetic"}
-    assert agent.create_synthetic(200)[0] == records[0]
+    assert agent.load_synthetic()[0] == records[0]
+
+
+def test_synthetic_file_is_only_generated_when_missing(tmp_path):
+    path = tmp_path / "synthetic.json"
+    agent = EmailFetchAgent(path)
+    generated = agent.load_synthetic()
+    assert len(generated) == 200
+
+    custom = [{"email_id": "kept", "sender_email": "test@example.com", "subject": "Keep me"}]
+    path.write_text(json.dumps(custom), encoding="utf-8")
+    assert agent.load_synthetic() == custom
 
 
 def test_today_only_filter_respects_local_day():
