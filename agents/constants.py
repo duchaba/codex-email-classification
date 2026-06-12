@@ -6,6 +6,9 @@ CATEGORIES = [
     "Spam",
 ]
 
+# First match wins whenever an email has signals for multiple primary categories.
+PRIMARY_CATEGORY_PRIORITY = tuple(CATEGORIES)
+
 CATEGORY_COLORS = {
     "Urgent Priority": "#e7826b",
     "Work": "#7c8ff5",
@@ -33,4 +36,3 @@ LEGACY_CATEGORY_ALIASES = {
     "Other/Needs Review": "Personal",
     "Other / Needs Review": "Personal",
 }
-

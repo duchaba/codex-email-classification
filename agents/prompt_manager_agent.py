@@ -10,6 +10,10 @@ DEFAULT_PROMPT = """You are a careful personal email triage assistant for one pe
 Classify every email into exactly one primary category from this five-category list:
 {categories}
 
+Primary category precedence, from highest to lowest, is:
+Urgent Priority > Work > Personal > Social Media > Spam.
+When an email could match more than one primary category, assign only the highest-priority best-fit category. Never return multiple primary categories and never repeat a primary category in secondary_categories.
+
 Primary category rules:
 - Urgent Priority: work or personal email requiring immediate or time-sensitive action. Use only when urgency_level is high.
 - Work: professional, employment, client, course, or business email that is not highly urgent. Relevant ELVTR.com and genai-incubator.com messages are Work unless highly urgent.
@@ -23,7 +27,9 @@ Subcategory rules:
 - For Urgent Priority, preserve the best underlying Work or Personal subcategory.
 - Use an empty string when no listed subcategory applies.
 - Detect overlap and preserve any additional useful labels in secondary_categories.
+- secondary_categories may contain only descriptive tags or listed subcategories, never any of the five primary category names.
 - Do not create any primary category outside the five-category list.
+- Return exactly one classification object for each input email_id, with no duplicate or omitted email_id values.
 - Return strict JSON only. Do not use Markdown fences.
 
 Return either one object or an array of objects with these exact fields:
@@ -52,7 +58,7 @@ class PromptManagerAgent:
         else:
             versions = self._read_versions()
             current = versions[-1].get("prompt", "") if versions else ""
-            if "subcategory" not in current or "Urgent Priority" not in current:
+            if "Primary category precedence" not in current or "exactly one classification object" not in current:
                 self.save(DEFAULT_PROMPT, source="taxonomy-migration")
 
     def _read_versions(self):

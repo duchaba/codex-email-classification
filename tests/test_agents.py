@@ -41,6 +41,22 @@ def test_urgent_work_and_social_marketing_rules():
     assert marketing["subcategory"] == "Sales & Marketing"
 
 
+def test_primary_category_ties_follow_declared_priority_order():
+    classifier = EmailClassifierAgent(mock_mode=True)
+    work_over_personal = classifier.classify(
+        [sample_email(subject="Client family update")], DEFAULT_PROMPT
+    )[0]
+    personal_over_social = classifier.classify(
+        [sample_email(subject="Family digest")], DEFAULT_PROMPT
+    )[0]
+    social_over_spam = classifier.classify(
+        [sample_email(subject="Digest cash reward")], DEFAULT_PROMPT
+    )[0]
+    assert work_over_personal["category"] == "Work"
+    assert personal_over_social["category"] == "Personal"
+    assert social_over_spam["category"] == "Social Media"
+
+
 def test_legacy_categories_become_primary_and_subcategory():
     regrouped = CategoryRegroupAgent().process(
         [
@@ -136,6 +152,46 @@ def test_classifier_cannot_overwrite_ground_truth_fields():
     result = EmailClassifierAgent(FakeOpenAIService(), mock_mode=False).classify([source], DEFAULT_PROMPT)[0]
     assert result["expected_category"] == "Personal"
     assert result["expected_subcategory"] == "Banking"
+
+
+def test_classifier_rejects_multiple_categories_and_duplicate_results():
+    class MultipleCategoryService:
+        is_configured = True
+
+        def classify(self, emails, _prompt):
+            return [{**emails[0], "category": ["Work", "Personal"], "subcategory": ""}]
+
+    with pytest.raises(ValueError, match="one valid primary category"):
+        EmailClassifierAgent(MultipleCategoryService(), mock_mode=False).classify(
+            [sample_email()], DEFAULT_PROMPT
+        )
+
+    class DuplicateService:
+        is_configured = True
+
+        def classify(self, emails, _prompt):
+            prediction = {**emails[0], "category": "Work", "subcategory": ""}
+            return [prediction, dict(prediction)]
+
+    with pytest.raises(ValueError, match="duplicate email_id"):
+        EmailClassifierAgent(DuplicateService(), mock_mode=False).classify(
+            [sample_email(), sample_email(email_id="two")], DEFAULT_PROMPT
+        )
+
+
+def test_regroup_removes_primary_categories_from_secondary_tags():
+    result = CategoryRegroupAgent().process(
+        [
+            {
+                "category": "Personal",
+                "subcategory": "Banking",
+                "secondary_categories": ["Work", "Banking", "Account Alert"],
+                "urgency_level": "low",
+            }
+        ]
+    )[0]
+    assert result["category"] == "Personal"
+    assert result["secondary_categories"] == ["Account Alert"]
 
 
 def test_ground_truth_agent_scores_and_builds_comparison_chart():

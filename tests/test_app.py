@@ -43,6 +43,9 @@ def test_user_can_classify_loaded_startup_emails(client):
     assert result["status"] == "complete"
     assert result["summary"]["total"] == 200
     assert result["pending_count"] == 0
+    assert sum(category["count"] for category in result["categories"]) == 200
+    assert len({email["email_id"] for email in result["emails"]}) == 200
+    assert all(isinstance(email["category"], str) for email in result["emails"])
 
 
 def test_prompt_rejects_broken_output_contract(client):

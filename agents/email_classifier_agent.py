@@ -1,7 +1,7 @@
 import json
 import re
 
-from .constants import CATEGORIES, LEGACY_CATEGORY_ALIASES, SUBCATEGORY_TO_PRIMARY
+from .constants import CATEGORIES, LEGACY_CATEGORY_ALIASES, PRIMARY_CATEGORY_PRIORITY, SUBCATEGORY_TO_PRIMARY
 
 
 class EmailClassifierAgent:
@@ -14,7 +14,29 @@ class EmailClassifierAgent:
             predictions = self.openai_service.classify(emails, prompt)
         else:
             predictions = [self._mock_classify(email) for email in emails]
+        predictions = self._validate_one_prediction_per_email(emails, predictions)
         return self._preserve_ground_truth(emails, predictions)
+
+    @staticmethod
+    def _validate_one_prediction_per_email(source_emails, predictions):
+        source_ids = [email.get("email_id") for email in source_emails]
+        prediction_ids = [prediction.get("email_id") for prediction in predictions]
+        if len(prediction_ids) != len(set(prediction_ids)):
+            raise ValueError("Classifier returned duplicate email_id values.")
+        if set(prediction_ids) != set(source_ids) or len(predictions) != len(source_emails):
+            raise ValueError("Classifier must return exactly one result for every input email_id.")
+        for prediction in predictions:
+            category = prediction.get("category")
+            if not isinstance(category, str) or category not in CATEGORIES:
+                raise ValueError("Classifier must return one valid primary category as a string.")
+            subcategory = prediction.get("subcategory", "")
+            if not isinstance(subcategory, str):
+                raise ValueError("Classifier subcategory must be a single string.")
+            secondary = prediction.get("secondary_categories", [])
+            if not isinstance(secondary, list):
+                raise ValueError("Classifier secondary_categories must be a list.")
+        by_id = {prediction["email_id"]: prediction for prediction in predictions}
+        return [by_id[email_id] for email_id in source_ids]
 
     @staticmethod
     def _preserve_ground_truth(source_emails, predictions):
@@ -60,7 +82,7 @@ class EmailClassifierAgent:
             score = sum(1 for keyword in keywords if keyword in text)
             if score:
                 matches.append((score, category, subcategory))
-        matches.sort(key=lambda item: (-item[0], CATEGORIES.index(item[1])))
+        matches.sort(key=lambda item: (-item[0], PRIMARY_CATEGORY_PRIORITY.index(item[1])))
 
         if matches:
             top_score, base_category, subcategory = matches[0]
@@ -85,7 +107,7 @@ class EmailClassifierAgent:
         secondary = []
         for _score, matched_category, matched_subcategory in matches[1:3]:
             label = matched_subcategory or matched_category
-            if label not in secondary and label != subcategory:
+            if label not in CATEGORIES and label not in secondary and label != subcategory:
                 secondary.append(label)
 
         confidence = min(0.98, 0.68 + top_score * 0.09) if matches else 0.46

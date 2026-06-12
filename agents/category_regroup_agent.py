@@ -25,6 +25,10 @@ class CategoryRegroupAgent:
             email["category"] = category
             email["primary_category"] = category
             email["subcategory"] = subcategory
+            email["secondary_categories"] = [
+                label
+                for label in (email.get("secondary_categories") or [])
+                if label not in CATEGORIES and label != subcategory
+            ]
             regrouped.append(email)
         return regrouped
-
