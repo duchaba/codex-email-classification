@@ -5,7 +5,6 @@ __pycache__/
 *.pyc
 data/config.json
 data/audit_log.json
-data/prompt_versions.json
 data/classification_state.json
 data/token.json
 data/client_secret.json
