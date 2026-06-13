@@ -1,6 +1,10 @@
-# Inbox Atelier
+# Agentic AI Email Classifier
 
 A local, single-user email classification dashboard. It includes a tracked synthetic fixture and can switch to an email JSON upload or today's Gmail inbox. Mock classification works without external credentials.
+
+## Screenshot
+
+![Architecture Diagram](static/images/agentic-email-screenshot-v0.20.png)
 
 ## Run locally
 
@@ -42,3 +46,7 @@ The app requests read-only Gmail access and stores the OAuth token locally in `d
 ```bash
 pytest -q
 ```
+
+# Architecture Diagram
+
+![Architecture Diagram](static/images/email-arch2.png)
