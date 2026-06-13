@@ -41,6 +41,7 @@ LOCAL_CONFIG = load_local_config()
 
 
 class Config:
+    APP_VERSION = os.getenv("APP_VERSION", "0.20")
     SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "local-email-copilot")
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or LOCAL_CONFIG.get("openai_api_key", "")
     OPENAI_MODEL = os.getenv("OPENAI_MODEL", LOCAL_CONFIG.get("openai_model", "gpt-4.1-mini"))
@@ -49,4 +50,3 @@ class Config:
     )
     MOCK_MODE = os.getenv("MOCK_MODE", "true").lower() in {"1", "true", "yes", "on"}
     MAX_CONTENT_LENGTH = 12 * 1024 * 1024
-

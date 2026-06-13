@@ -3,24 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f7f4ff">
+  <meta name="theme-color" content="#fffaf0">
   <title>Inbox Atelier</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=Patrick+Hand&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive-fixes.css') }}">
 </head>
 <body>
   <div class="ambient ambient-one"></div>
   <div class="ambient ambient-two"></div>
+  <div class="scene-leaves scene-leaves-left" aria-hidden="true">☘</div>
+  <div class="scene-sun" aria-hidden="true"><i></i></div>
   <div class="app-shell">
     <header class="topbar">
       <a class="brand" href="#" aria-label="Inbox Atelier home">
-        <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 48 48"><rect x="7" y="12" width="34" height="28" rx="10"/><path d="M14 21l10 7 10-7"/><path d="M24 12V7m-4 0h8"/></svg>
-        </span>
-        <span><strong>Inbox Atelier</strong><small>Your personal AI mail studio</small></span>
+        <span class="brand-mark" aria-hidden="true"><span class="brand-face">••</span></span>
+        <span><strong>Inbox Atelier</strong><small>AI-powered mail, thoughtfully sorted</small></span>
       </a>
       <div class="header-meta">
         <div class="date-block"><small>Today</small><strong id="todayText">{{ initial_data.today }}</strong></div>
@@ -38,11 +38,16 @@
           <span class="category-icon all-icon">✦</span><span class="category-label">All inbox</span><strong id="allCount">0</strong>
         </button>
         <nav id="categoryList" aria-label="Email categories"></nav>
-        <div class="sidebar-footer">
-          <div class="mini-robot" aria-hidden="true">
-            <svg viewBox="0 0 120 92"><path class="shadow" d="M19 78c13-11 68-14 84 0 9 9-4 13-39 13S8 87 19 78Z"/><path class="body" d="M31 41h56v37H31z"/><rect class="head" x="20" y="15" width="78" height="48" rx="19"/><path class="line" d="M59 15V8m-7 0h14"/><circle class="eye" cx="44" cy="38" r="5"/><circle class="eye" cx="75" cy="38" r="5"/><path class="smile" d="M48 50c7 5 15 5 22 0"/><path class="arm" d="M30 52 17 66m70-14 15 12"/></svg>
+        <div class="sidebar-footer about-card">
+          <div class="about-icon" aria-hidden="true">
+            <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="27"/><path d="M32 28v18"/><circle cx="32" cy="19" r="2"/></svg>
           </div>
-          <p><strong>Your inbox, thoughtfully sorted.</strong><br><span id="modelText">Mock agent is ready</span></p>
+          <strong>About</strong>
+          <dl>
+            <div><dt>Original Author</dt><dd>Duc Haba</dd></div>
+            <div><dt>License</dt><dd>GNU GPL 3.0</dd></div>
+            <div><dt>Current Version</dt><dd>v{{ initial_data.app_version }}</dd></div>
+          </dl>
         </div>
       </aside>
 
@@ -61,13 +66,7 @@
               <button class="button primary" id="rerunTopButton"><span>✦</span> Run classification</button>
             </div>
           </div>
-          <div class="architect-art" aria-hidden="true">
-            <svg viewBox="0 0 260 175">
-              <path class="blob" d="M34 91c0-43 37-70 84-62 29-28 87-7 89 37 34 22 18 77-27 79H67c-42-1-57-31-33-54Z"/>
-              <path class="desk" d="M43 135h177v10H43z"/><path class="paper" d="m67 97 62-18 13 45-62 18z"/><path class="paper-line" d="m82 103 39-11m-35 22 39-11m-35 21 31-9"/>
-              <rect class="bot-body" x="153" y="78" width="53" height="58" rx="18"/><rect class="bot-head" x="142" y="43" width="73" height="53" rx="21"/><path class="bot-line" d="M179 43V30m-8 0h16"/><circle class="bot-eye" cx="164" cy="68" r="5"/><circle class="bot-eye" cx="194" cy="68" r="5"/><path class="bot-smile" d="M166 81c8 6 19 6 27 0"/><path class="bot-arm" d="m154 105-27 14m79-13 18-14"/><path class="pencil" d="m119 120 25-12 3 6-25 12z"/>
-            </svg>
-          </div>
+          <div class="architect-art" aria-hidden="true"><img src="{{ url_for('static', filename='images/inbox-atelier-hero.png') }}" alt=""></div>
         </section>
 
         <section class="stats-grid">

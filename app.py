@@ -156,6 +156,7 @@ def create_app(test_config=None):
             "summary": summary_agent.build(emails),
             "chart": chart_agent.build(emails),
             "today": datetime.now().astimezone().strftime("%A, %B %-d, %Y"),
+            "app_version": app.config["APP_VERSION"],
             "mock_mode": classifier().mock_mode,
             "gmail_connected": gmail_service.is_connected,
             "gmail_configured": gmail_service.is_configured,
