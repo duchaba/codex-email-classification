@@ -1,4 +1,3 @@
-import csv
 import json
 import random
 from datetime import datetime, timedelta
@@ -6,7 +5,7 @@ from pathlib import Path
 
 
 class EmailFetchAgent:
-    REQUIRED_CSV_FIELDS = {"sender_email", "subject"}
+    REQUIRED_EMAIL_FIELDS = {"sender_email", "subject"}
 
     TEMPLATES = [
         ("Urgent Priority", "Work", "Maya Chen", "maya@elvtr.com", "Course launch review needed", "Please review the launch checklist and reply before 3 PM today."),
@@ -62,30 +61,34 @@ class EmailFetchAgent:
     def load_synthetic(self):
         if not self.synthetic_path.exists():
             return self.create_synthetic()
-        try:
-            records = json.loads(self.synthetic_path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError as exc:
-            raise ValueError(f"Synthetic email file contains invalid JSON: {exc}") from exc
-        if not isinstance(records, list) or not records:
-            raise ValueError("Synthetic email file must contain a non-empty JSON array.")
-        return records
+        return self.load_email_json(self.synthetic_path)
 
-    def load_csv(self, file_path):
-        with Path(file_path).open("r", encoding="utf-8-sig", newline="") as handle:
-            reader = csv.DictReader(handle)
-            if not reader.fieldnames:
-                raise ValueError("CSV has no header row.")
-            missing = self.REQUIRED_CSV_FIELDS - set(reader.fieldnames)
+    def load_email_json(self, file_path, source_type=None):
+        try:
+            records = json.loads(Path(file_path).read_text(encoding="utf-8-sig"))
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Email file contains invalid JSON: {exc}") from exc
+        if not isinstance(records, list) or not records:
+            raise ValueError("Email file must contain a non-empty JSON array.")
+        now = datetime.now().astimezone().isoformat()
+        normalized = []
+        for index, record in enumerate(records):
+            if not isinstance(record, dict):
+                raise ValueError(f"Email item {index + 1} must be a JSON object.")
+            missing = self.REQUIRED_EMAIL_FIELDS - set(record)
             if missing:
-                raise ValueError("CSV is missing required columns: " + ", ".join(sorted(missing)))
-            rows = [dict(row) for row in reader if any(str(value).strip() for value in row.values())]
-        if not rows:
-            raise ValueError("CSV contains no email rows.")
-        for index, row in enumerate(rows):
-            row.setdefault("email_id", f"upload-{index + 1:04d}")
-            row.setdefault("date", datetime.now().astimezone().isoformat())
-            row["source_type"] = "upload"
-        return rows
+                raise ValueError(
+                    f"Email item {index + 1} is missing required fields: " + ", ".join(sorted(missing))
+                )
+            email = dict(record)
+            email.setdefault("email_id", f"upload-{index + 1:04d}")
+            email.setdefault("date", now)
+            if source_type:
+                email["source_type"] = source_type
+            else:
+                email.setdefault("source_type", "synthetic")
+            normalized.append(email)
+        return normalized
 
     def load_gmail_today(self):
         if not self.gmail_service:

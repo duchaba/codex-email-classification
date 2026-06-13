@@ -45,6 +45,21 @@ def create_app(test_config=None):
     ground_truth_agent = GroundTruthTestAgent()
     state_file = data_dir / "classification_state.json"
 
+    def sort_emails_newest_first(emails):
+        def timestamp(email):
+            value = str(email.get("date") or "").strip()
+            if not value:
+                return float("-inf")
+            try:
+                parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                if parsed.tzinfo is None:
+                    parsed = parsed.astimezone()
+                return parsed.timestamp()
+            except ValueError:
+                return float("-inf")
+
+        return sorted(emails, key=timestamp, reverse=True)
+
     def load_state():
         try:
             state = json.loads(state_file.read_text(encoding="utf-8"))
@@ -57,9 +72,11 @@ def create_app(test_config=None):
         state_file.write_text(json.dumps(state, indent=2), encoding="utf-8")
 
     def initialize_startup_state():
-        raw_emails = fetch_agent.load_synthetic()
+        return load_raw_state(fetch_agent.load_synthetic(), "synthetic")
+
+    def load_raw_state(raw_emails, mode):
         state = {
-            "mode": "synthetic",
+            "mode": mode,
             "raw_emails": raw_emails,
             "emails": [],
             "last_run": None,
@@ -82,6 +99,7 @@ def create_app(test_config=None):
             normalized = preprocess_agent.process(raw_emails)
             classified = classifier().classify(normalized, prompt["prompt"])
             classified = regroup_agent.process(classified)
+            classified = sort_emails_newest_first(classified)
             status = "complete"
         except Exception as exc:
             classified = []
@@ -112,7 +130,7 @@ def create_app(test_config=None):
 
     def dashboard_payload(state=None):
         state = state or load_state()
-        emails = state.get("emails", [])
+        emails = sort_emails_newest_first(state.get("emails", []))
         counts = {category: 0 for category in CATEGORIES}
         confidence_totals = {category: [] for category in CATEGORIES}
         for email in emails:
@@ -132,6 +150,7 @@ def create_app(test_config=None):
         ]
         return {
             **state,
+            "emails": emails,
             "pending_count": len(state.get("raw_emails", [])) if not emails else 0,
             "categories": categories,
             "summary": summary_agent.build(emails),
@@ -163,24 +182,22 @@ def create_app(test_config=None):
 
     @app.post("/api/emails/synthetic")
     def synthetic():
-        return jsonify(dashboard_payload(run_classification(fetch_agent.load_synthetic(), "synthetic")))
+        return jsonify(dashboard_payload(load_raw_state(fetch_agent.load_synthetic(), "synthetic")))
 
-    @app.post("/api/upload-csv")
-    def upload_csv():
+    @app.post("/api/upload-email-json")
+    def upload_email_json():
         uploaded = request.files.get("file")
         if not uploaded or not uploaded.filename:
-            return jsonify({"error": "Choose a CSV file to upload."}), 400
-        if not uploaded.filename.lower().endswith(".csv"):
-            return jsonify({"error": "Only CSV files are supported."}), 400
+            return jsonify({"error": "Choose an email JSON file to upload."}), 400
+        if not uploaded.filename.lower().endswith(".json"):
+            return jsonify({"error": "Only JSON files are supported."}), 400
         destination = upload_dir / secure_filename(uploaded.filename)
         uploaded.save(destination)
         try:
-            rows = fetch_agent.load_csv(destination)
-            if len(rows) < 200:
-                raise ValueError(f"CSV must contain at least 200 email rows; found {len(rows)}.")
-            state = run_classification(rows, "upload")
+            rows = fetch_agent.load_email_json(destination, source_type="upload")
+            state = load_raw_state(rows, "upload")
             return jsonify(dashboard_payload(state))
-        except (ValueError, RuntimeError) as exc:
+        except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
 
     @app.post("/api/classify")
@@ -206,7 +223,9 @@ def create_app(test_config=None):
 
     @app.get("/api/category/<path:category_name>")
     def category(category_name):
-        emails = [email for email in load_state().get("emails", []) if email.get("category") == category_name]
+        emails = sort_emails_newest_first(
+            [email for email in load_state().get("emails", []) if email.get("category") == category_name]
+        )
         return jsonify({"category": category_name, "emails": emails, "count": len(emails)})
 
     @app.get("/api/prompt")

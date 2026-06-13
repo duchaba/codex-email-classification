@@ -3,6 +3,27 @@
   min-width: 0;
 }
 
+.stat-card {
+  width: 100%;
+  border-color: rgba(232, 227, 240, .85);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: #d8d1e7;
+  box-shadow: 0 16px 38px rgba(70, 58, 103, .13);
+}
+
+.stat-card:focus-visible {
+  outline: 3px solid rgba(117, 105, 216, .28);
+  outline-offset: 3px;
+}
+
 .engine-status {
   width: min(540px, 100%);
   margin: 0 0 16px;

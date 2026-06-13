@@ -1,4 +1,3 @@
-import csv
 import json
 from datetime import datetime, timedelta, timezone
 
@@ -88,20 +87,17 @@ def test_prompt_load_edit_and_reset(tmp_path):
         manager.save("Classify this")
 
 
-def test_csv_parsing_and_validation(tmp_path):
-    path = tmp_path / "emails.csv"
-    with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=["sender_email", "subject", "body_preview"])
-        writer.writeheader()
-        writer.writerow({"sender_email": "a@example.com", "subject": "Hi", "body_preview": "Hello"})
-    rows = EmailFetchAgent(tmp_path / "synthetic.json").load_csv(path)
+def test_email_json_parsing_and_validation(tmp_path):
+    path = tmp_path / "emails.json"
+    path.write_text(json.dumps([{"sender_email": "a@example.com", "subject": "Hi"}]), encoding="utf-8")
+    rows = EmailFetchAgent(tmp_path / "synthetic.json").load_email_json(path, source_type="upload")
     assert rows[0]["source_type"] == "upload"
     assert rows[0]["email_id"].startswith("upload-")
 
-    malformed = tmp_path / "bad.csv"
-    malformed.write_text("name,body\nA,Hello\n", encoding="utf-8")
-    with pytest.raises(ValueError, match="missing required columns"):
-        EmailFetchAgent(tmp_path / "synthetic.json").load_csv(malformed)
+    malformed = tmp_path / "bad.json"
+    malformed.write_text(json.dumps([{"sender_name": "A"}]), encoding="utf-8")
+    with pytest.raises(ValueError, match="missing required fields"):
+        EmailFetchAgent(tmp_path / "synthetic.json").load_email_json(malformed)
 
 
 def test_preprocess_derives_preview_from_full_body_without_changing_ground_truth():
@@ -243,7 +239,12 @@ def test_synthetic_file_is_only_generated_when_missing(tmp_path):
 
     custom = [{"email_id": "kept", "sender_email": "test@example.com", "subject": "Keep me"}]
     path.write_text(json.dumps(custom), encoding="utf-8")
-    assert agent.load_synthetic() == custom
+    loaded = agent.load_synthetic()
+    assert loaded[0]["email_id"] == "kept"
+    assert loaded[0]["sender_email"] == "test@example.com"
+    assert loaded[0]["subject"] == "Keep me"
+    assert loaded[0]["source_type"] == "synthetic"
+    assert loaded[0]["date"]
 
 
 def test_today_only_filter_respects_local_day():
