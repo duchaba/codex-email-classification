@@ -33,11 +33,11 @@ def test_dashboard_loads_raw_emails_without_classifying_at_startup(client):
     assert status["pending_count"] == 200
     assert status["status"] == "awaiting_classification"
     assert status["mode"] == "synthetic"
-    assert status["app_version"] == "0.20"
+    assert status["app_version"] == "0.30"
     assert "Original Author" in page
     assert "Duc Haba" in page
     assert "GNU GPL 3.0" in page
-    assert "v0.20" in page
+    assert "v0.30" in page
     assert [category["name"] for category in status["categories"]] == [
         "Urgent Priority",
         "Work",

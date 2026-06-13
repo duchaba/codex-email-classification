@@ -4,10 +4,11 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from agents.category_regroup_agent import CategoryRegroupAgent
-from agents.email_classifier_agent import EmailClassifierAgent
+from agents.ai_email_classifier_agent import AIEmailClassifierAgent
 from agents.email_fetch_agent import EmailFetchAgent
 from agents.email_preprocess_agent import EmailPreprocessAgent
 from agents.ground_truth_test_agent import GroundTruthTestAgent
+from agents.mock_email_classifier_agent import MockEmailClassifierAgent
 from agents.prompt_manager_agent import DEFAULT_PROMPT, PromptManagerAgent
 from services.gmail_service import GmailService
 
@@ -27,7 +28,7 @@ def sample_email(**overrides):
 
 
 def test_urgent_work_and_social_marketing_rules():
-    classifier = EmailClassifierAgent(mock_mode=True)
+    classifier = MockEmailClassifierAgent()
     priority = classifier.classify(
         [sample_email(sender_email="coach@elvtr.com", subject="Launch review needed today")], DEFAULT_PROMPT
     )[0]
@@ -42,7 +43,7 @@ def test_urgent_work_and_social_marketing_rules():
 
 
 def test_primary_category_ties_follow_declared_priority_order():
-    classifier = EmailClassifierAgent(mock_mode=True)
+    classifier = MockEmailClassifierAgent()
     work_over_personal = classifier.classify(
         [sample_email(subject="Client family update")], DEFAULT_PROMPT
     )[0]
@@ -130,7 +131,7 @@ def test_synthetic_email_creation_is_deterministic(tmp_path):
 
 
 def test_expected_labels_do_not_influence_classification():
-    classifier = EmailClassifierAgent(mock_mode=True)
+    classifier = MockEmailClassifierAgent()
     email = sample_email(
         subject="Save 25% on your annual plan",
         body_preview="Upgrade now to receive this discount offer.",
@@ -167,7 +168,7 @@ def test_classifier_cannot_overwrite_ground_truth_fields():
         expected_category="Personal",
         expected_subcategory="Banking",
     )
-    result = EmailClassifierAgent(FakeOpenAIService(), mock_mode=False).classify([source], DEFAULT_PROMPT)[0]
+    result = AIEmailClassifierAgent(FakeOpenAIService()).classify([source], DEFAULT_PROMPT)[0]
     assert result["expected_category"] == "Personal"
     assert result["expected_subcategory"] == "Banking"
     assert result["body_preview"] == "Derived preview"
@@ -182,7 +183,7 @@ def test_classifier_rejects_multiple_categories_and_duplicate_results():
             return [{**emails[0], "category": ["Work", "Personal"], "subcategory": ""}]
 
     with pytest.raises(ValueError, match="one valid primary category"):
-        EmailClassifierAgent(MultipleCategoryService(), mock_mode=False).classify(
+        AIEmailClassifierAgent(MultipleCategoryService()).classify(
             [sample_email()], DEFAULT_PROMPT
         )
 
@@ -194,7 +195,7 @@ def test_classifier_rejects_multiple_categories_and_duplicate_results():
             return [prediction, dict(prediction)]
 
     with pytest.raises(ValueError, match="duplicate email_id"):
-        EmailClassifierAgent(DuplicateService(), mock_mode=False).classify(
+        AIEmailClassifierAgent(DuplicateService()).classify(
             [sample_email(), sample_email(email_id="two")], DEFAULT_PROMPT
         )
 

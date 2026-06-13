@@ -1,66 +1,15 @@
-import json
 import re
 
+from .base_email_classifier_agent import BaseEmailClassifierAgent
 from .constants import CATEGORIES, LEGACY_CATEGORY_ALIASES, PRIMARY_CATEGORY_PRIORITY, SUBCATEGORY_TO_PRIMARY
 
 
-class EmailClassifierAgent:
-    def __init__(self, openai_service=None, mock_mode=True):
-        self.openai_service = openai_service
-        self.mock_mode = mock_mode
+class MockEmailClassifierAgent(BaseEmailClassifierAgent):
+    def classify(self, emails, _prompt):
+        predictions = [self._classify_email(email) for email in emails]
+        return self._finalize(emails, predictions)
 
-    def classify(self, emails, prompt):
-        if not self.mock_mode and self.openai_service and self.openai_service.is_configured:
-            predictions = self.openai_service.classify(emails, prompt)
-        else:
-            predictions = [self._mock_classify(email) for email in emails]
-        predictions = self._validate_one_prediction_per_email(emails, predictions)
-        return self._preserve_ground_truth(emails, predictions)
-
-    @staticmethod
-    def _validate_one_prediction_per_email(source_emails, predictions):
-        source_ids = [email.get("email_id") for email in source_emails]
-        prediction_ids = [prediction.get("email_id") for prediction in predictions]
-        if len(prediction_ids) != len(set(prediction_ids)):
-            raise ValueError("Classifier returned duplicate email_id values.")
-        if set(prediction_ids) != set(source_ids) or len(predictions) != len(source_emails):
-            raise ValueError("Classifier must return exactly one result for every input email_id.")
-        for prediction in predictions:
-            category = prediction.get("category")
-            if not isinstance(category, str) or category not in CATEGORIES:
-                raise ValueError("Classifier must return one valid primary category as a string.")
-            subcategory = prediction.get("subcategory", "")
-            if not isinstance(subcategory, str):
-                raise ValueError("Classifier subcategory must be a single string.")
-            secondary = prediction.get("secondary_categories", [])
-            if not isinstance(secondary, list):
-                raise ValueError("Classifier secondary_categories must be a list.")
-        by_id = {prediction["email_id"]: prediction for prediction in predictions}
-        return [by_id[email_id] for email_id in source_ids]
-
-    @staticmethod
-    def _preserve_ground_truth(source_emails, predictions):
-        """Ground-truth labels are immutable evaluation data, never model output."""
-        source_by_id = {email.get("email_id"): email for email in source_emails}
-        protected = (
-            "expected_category",
-            "expected_subcategory",
-            "body_preview",
-            "full_body_optional",
-        )
-        preserved = []
-        for prediction in predictions:
-            source = source_by_id.get(prediction.get("email_id"), {})
-            result = dict(prediction)
-            for field in protected:
-                if field in source:
-                    result[field] = source[field]
-                else:
-                    result.pop(field, None)
-            preserved.append(result)
-        return preserved
-
-    def _mock_classify(self, email):
+    def _classify_email(self, email):
         text = " ".join(
             [
                 email.get("sender_email", ""),
@@ -136,14 +85,3 @@ class EmailClassifierAgent:
             "reason": reason,
             "urgency_level": urgency,
         }
-
-    @staticmethod
-    def parse_model_json(raw):
-        cleaned = raw.strip()
-        if cleaned.startswith("```json"):
-            cleaned = cleaned[len("```json") :]
-        if cleaned.endswith("```"):
-            cleaned = cleaned[: -len("```")]
-        cleaned = cleaned.strip()
-        result = json.loads(cleaned)
-        return result if isinstance(result, list) else [result]

@@ -7,13 +7,14 @@ from flask import Flask, jsonify, redirect, render_template, request, session, u
 from werkzeug.utils import secure_filename
 
 from agents import (
+    AIEmailClassifierAgent,
     AuditLogAgent,
     CategoryRegroupAgent,
     ChartAgent,
-    EmailClassifierAgent,
     EmailFetchAgent,
     EmailPreprocessAgent,
     GroundTruthTestAgent,
+    MockEmailClassifierAgent,
     PromptManagerAgent,
     SummaryAgent,
 )
@@ -88,8 +89,13 @@ def create_app(test_config=None):
 
     initialize_startup_state()
 
+    def use_mock_classifier():
+        return app.config["MOCK_MODE"] or not openai_service.is_configured
+
     def classifier():
-        return EmailClassifierAgent(openai_service, mock_mode=app.config["MOCK_MODE"] or not openai_service.is_configured)
+        if use_mock_classifier():
+            return MockEmailClassifierAgent()
+        return AIEmailClassifierAgent(openai_service)
 
     def run_classification(raw_emails, mode, is_rerun=False):
         started = datetime.now().astimezone()
@@ -105,12 +111,13 @@ def create_app(test_config=None):
             classified = []
             errors.append(str(exc))
             status = "error"
+        mock_mode = use_mock_classifier()
         state = {
             "mode": mode,
             "raw_emails": raw_emails,
             "emails": classified,
             "last_run": started.isoformat(),
-            "classification_model": "mock-rules-v1" if classifier().mock_mode else openai_service.model,
+            "classification_model": "mock-rules-v1" if mock_mode else openai_service.model,
             "status": status,
             "errors": errors,
         }
@@ -118,7 +125,7 @@ def create_app(test_config=None):
         audit_agent.record(
             mode=mode,
             prompt_version=prompt["version"],
-            model="mock-rules-v1" if classifier().mock_mode else openai_service.model,
+            model="mock-rules-v1" if mock_mode else openai_service.model,
             emails_processed=len(classified),
             errors=errors,
             rerun=is_rerun,
@@ -157,11 +164,11 @@ def create_app(test_config=None):
             "chart": chart_agent.build(emails),
             "today": datetime.now().astimezone().strftime("%A, %B %-d, %Y"),
             "app_version": app.config["APP_VERSION"],
-            "mock_mode": classifier().mock_mode,
+            "mock_mode": use_mock_classifier(),
             "gmail_connected": gmail_service.is_connected,
             "gmail_configured": gmail_service.is_configured,
             "openai_configured": openai_service.is_configured,
-            "model": "mock-rules-v1" if classifier().mock_mode else openai_service.model,
+            "model": "mock-rules-v1" if use_mock_classifier() else openai_service.model,
         }
 
     @app.errorhandler(413)
