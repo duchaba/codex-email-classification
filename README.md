@@ -5,7 +5,7 @@ This AI-powered email dashboard turns inbox chaos into clarity by sorting messag
 
 ## Screenshot
 
-![Architecture Diagram](static/images/agentic-email-screenshot-v0.20.png)
+![Architecture Diagram](static/images/agentic-email-screenshot-v0.40.png)
 
 ---
 ‣ 
