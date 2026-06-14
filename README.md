@@ -1,10 +1,14 @@
-# Agentic AI Email Classifier
+# Duc Haba Atelier
+## Agentic AI Email Classifier
 
-A local, single-user email classification dashboard. It includes a tracked synthetic fixture and can switch to an email JSON upload or today's Gmail inbox. Mock classification works without external credentials.
+This AI-powered email dashboard turns inbox chaos into clarity by sorting messages into Urgent, Work, Personal, Social Media, and Spam. It can summarize your day, highlight what matters, test its own accuracy, and even draft replies—because your attention belongs on important decisions, not inbox archaeology.
 
 ## Screenshot
 
 ![Architecture Diagram](static/images/agentic-email-screenshot-v0.20.png)
+
+---
+‣ 
 
 ## Run locally
 
@@ -17,9 +21,12 @@ python run.py
 
 Open `http://127.0.0.1:5000`.
 
-At startup the app loads the synthetic fixture but does not classify it automatically. Click **Classify emails** on the dashboard when you are ready to run the mock rules or configured AI model.
+At startup, the app loads the synthetic fixture but does not automatically classify it. Click **Classify emails** on the dashboard when you are ready to run the mock rules or configured AI model.
 
 The **Test Ground Truth** tool compares the already saved synthetic predictions with `expected_category` and `expected_subcategory`. It never runs classification again and never changes the expected labels.
+
+---
+‣ 
 
 ## Data modes
 
@@ -27,6 +34,9 @@ The **Test Ground Truth** tool compares the already saved synthetic predictions 
 - When a raw email has a blank `body_preview`, clicking **Classify emails** derives the preview from `full_body_optional` before running mock or AI classification. The derived preview and predicted labels are saved in local classification state, not written back into the tracked raw fixture.
 - **Uploaded email JSON:** accepts a non-empty JSON array with `sender_email` and `subject` on every email object. Other supported fields include `email_id`, `date`, `sender_name`, `body_preview`, and `full_body_optional`. Uploading loads the raw messages; click **Classify emails** to run mock or AI classification.
 - **Live Gmail:** fetches only messages whose timestamps fall on the current local calendar day.
+
+---
+‣ 
 
 ## Optional OpenAI setup
 
@@ -41,12 +51,49 @@ Enter an API key in the dashboard setup dialog, or copy `.env.example` to `.env`
 
 The app requests Gmail read and send access and stores the OAuth token locally in `data/token.json`. Sending always requires an explicit confirmation in the reply composer. Existing read-only tokens must reconnect once to grant send permission.
 
+---
+‣ 
+
 ## Tests
 
 ```bash
 pytest -q
 ```
 
+---
+‣ 
+
+# Estimate Daily Cost for Using "Duc Haba Atelier"
+
+- Classifying **50 emails** costs approximately **1 cent**, or about $0.00018 per email.
+
+For the 50 synthetic emails:
+```
+Usage	                 tokens	      Cost
+Classification input	 7,900	      $0.0032
+Classification output	 3,700	      $0.0060
+Total	                 11,600	      $0.0092
+---------------------
+Typical daily total      *25,000      $0.0198 (about 2 cents)
+```
+
+The app also generates a daily AI brief after classification. Including that, expect roughly $0.01–$0.012 per run.
+GPT-4.1 mini pricing: $0.40/1M input tokens and $1.60/1M output tokens. Actual usage varies with email length and response size.
+
+- Why choose the GPT-4.1-mini model instead of the latest 5.x model?
+
+The reason is that the GPT-4.1-mini is sufficient for tasks like email classification and drafting response emails, while being very cost-effective. In contrast, newer models, such as GPT-5.5, are considered over-engineered for these tasks and are over 2,000 times more expensive.
+
+---
+‣ 
+
 # Architecture Diagram
 
 ![Architecture Diagram](static/images/email-arch2.png)
+
+---
+‣ 
+
+# Legal
+
+- GNU Affero General Public License v3.0
