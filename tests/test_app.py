@@ -33,11 +33,11 @@ def test_dashboard_loads_raw_emails_without_classifying_at_startup(client):
     assert status["pending_count"] == 200
     assert status["status"] == "awaiting_classification"
     assert status["mode"] == "synthetic"
-    assert status["app_version"] == "0.30"
+    assert status["app_version"] == "0.40"
     assert "Original Author" in page
     assert "Duc Haba" in page
     assert "GNU GPL 3.0" in page
-    assert "v0.30" in page
+    assert "v0.40" in page
     assert [category["name"] for category in status["categories"]] == [
         "Urgent Priority",
         "Work",
@@ -55,11 +55,38 @@ def test_user_can_classify_loaded_startup_emails(client):
     assert result["status"] == "complete"
     assert result["summary"]["total"] == 200
     assert result["pending_count"] == 0
+    assert result["daily_brief"]["generated_by"] == "local"
+    assert result["daily_brief"]["text"]
     assert sum(category["count"] for category in result["categories"]) == 200
     assert len({email["email_id"] for email in result["emails"]}) == 200
     assert all(isinstance(email["category"], str) for email in result["emails"])
     timestamps = [datetime.fromisoformat(email["date"]).timestamp() for email in result["emails"]]
     assert timestamps == sorted(timestamps, reverse=True)
+
+    actionable = next(email for email in result["emails"] if email["category"] in {"Urgent Priority", "Work", "Personal"})
+    raw = client.get(f"/api/email/{actionable['email_id']}/raw")
+    assert raw.status_code == 200
+    raw_result = raw.get_json()
+    assert raw_result["email_id"] == actionable["email_id"]
+    assert "expected_category" not in raw_result
+
+    excluded = next(email for email in result["emails"] if email["category"] in {"Social Media", "Spam"})
+    assert client.get(f"/api/email/{excluded['email_id']}/raw").status_code == 403
+    assert client.post(f"/api/email/{excluded['email_id']}/draft-response").status_code == 403
+
+    saved = client.post(
+        f"/api/email/{actionable['email_id']}/save-response",
+        json={"draft": "Thanks for the note."},
+    )
+    assert saved.status_code == 200
+    assert client.get("/api/status").get_json()["response_drafts"][actionable["email_id"]] == "Thanks for the note."
+
+    send = client.post(
+        f"/api/email/{actionable['email_id']}/send-response",
+        json={"draft": "Thanks for the note."},
+    )
+    assert send.status_code == 409
+    assert "live Gmail" in send.get_json()["error"]
 
 
 def test_email_listing_sorts_latest_first_and_invalid_dates_last(client):

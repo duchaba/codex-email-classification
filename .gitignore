@@ -6,6 +6,7 @@ __pycache__/
 data/config.json
 data/audit_log.json
 data/classification_state.json
+data/response_drafts.json
 data/token.json
 data/client_secret.json
 data/uploads/*

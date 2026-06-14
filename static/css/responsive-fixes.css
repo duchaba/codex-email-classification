@@ -96,9 +96,24 @@ body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-i
 .brief-card { background: linear-gradient(180deg, #f4fbf7, #fffdf8); }
 .sparkle { background: #fff3bd; color: #c88809; border: 1px solid #e8c358; }
 .brief-item { border: 1px solid #dce6ef; background: rgba(255,255,255,.78); }
+.daily-brief-copy { margin-top: 18px; padding: 18px; border: 1px solid #cce1d5; border-radius: 18px; background: rgba(255,255,255,.78); color: #355c62; }
+.daily-brief-copy p { margin: 0; padding: 0 0 15px; font-size: 13px; line-height: 1.65; }
+.daily-brief-copy p + p { padding-top: 15px; border-top: 1px dashed rgba(20, 122, 103, .22); }
+.daily-brief-copy p:last-of-type { padding-bottom: 15px; }
+.brief-source { display: inline-flex; padding: 5px 9px; border-radius: 999px; background: #e8f7ef; color: #147a67; font-size: 9px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 .email-panel { background: rgba(255, 255, 253, .96); }
 .email-row { border-bottom-color: #dfe8f0; border-radius: 12px; }
 .email-row:hover { background: #f3f8ff; }
+.email-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 13px; padding-top: 12px; border-top: 1px solid #dce6ef; }
+.email-action-output { margin-top: 12px; padding: 14px; border: 1px solid #c8d9e9; border-radius: 14px; background: #fff; color: #405c76; line-height: 1.65; white-space: normal; }
+.email-action-output > strong { display: block; margin-bottom: 7px; color: var(--navy); font: 800 11px Manrope, sans-serif; }
+.email-action-output > div { max-height: 300px; overflow-y: auto; font-size: 11px; }
+.email-action-output.draft { border-color: #a9d7c2; background: #f2fbf6; }
+.email-action-output.error { border-color: #edbbb5; background: #fff4f2; color: #9f5148; }
+.response-draft-editor { width: 100%; min-height: 180px; resize: vertical; padding: 13px; border: 1px solid #b9d3c6; border-radius: 12px; background: #fff; color: #294d4c; font: 12px/1.65 "DM Sans", sans-serif; outline: none; }
+.response-draft-editor:focus { border-color: #4b9e7c; box-shadow: 0 0 0 3px rgba(75,158,124,.13); }
+.response-compose-actions { display: flex; gap: 8px; margin-top: 10px; }
+.response-help { display: block; margin-top: 8px; color: #718b82; font-size: 9px; }
 .sender-avatar { box-shadow: inset 0 0 0 2px rgba(255,255,255,.55); }
 .category-chip { border: 1px solid currentColor; }
 .prompt-panel { background: linear-gradient(145deg, #fffaf0, #f8f5ff); }

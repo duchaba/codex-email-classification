@@ -1,12 +1,15 @@
+import base64
 import json
 from datetime import datetime, timedelta, timezone
 
 import pytest
 
 from agents.category_regroup_agent import CategoryRegroupAgent
+from agents.daily_brief_agent import DailyBriefAgent
 from agents.ai_email_classifier_agent import AIEmailClassifierAgent
 from agents.email_fetch_agent import EmailFetchAgent
 from agents.email_preprocess_agent import EmailPreprocessAgent
+from agents.email_response_agent import EmailResponseAgent
 from agents.ground_truth_test_agent import GroundTruthTestAgent
 from agents.mock_email_classifier_agent import MockEmailClassifierAgent
 from agents.prompt_manager_agent import DEFAULT_PROMPT, PromptManagerAgent
@@ -56,6 +59,51 @@ def test_primary_category_ties_follow_declared_priority_order():
     assert work_over_personal["category"] == "Work"
     assert personal_over_social["category"] == "Personal"
     assert social_over_spam["category"] == "Social Media"
+
+
+def test_daily_brief_uses_ai_and_falls_back_locally():
+    class BriefService:
+        is_configured = True
+
+        def generate_daily_brief(self, _emails):
+            return "Work brought the plot today. One urgent note deserves the first cup of coffee."
+
+    emails = [{"category": "Work"}, {"category": "Urgent Priority"}]
+    ai_result = DailyBriefAgent(BriefService()).build(emails, use_ai=True)
+    assert ai_result["generated_by"] == "ai"
+    assert "first cup of coffee" in ai_result["text"]
+
+    class BrokenBriefService:
+        is_configured = True
+
+        def generate_daily_brief(self, _emails):
+            raise RuntimeError("brief unavailable")
+
+    fallback = DailyBriefAgent(BrokenBriefService()).build(emails, use_ai=True)
+    assert fallback["generated_by"] == "local-fallback"
+    assert "2 messages" in fallback["text"]
+
+
+def test_daily_brief_adds_topic_breaks_when_ai_returns_one_block():
+    text = "Work leads the inbox today. One urgent approval needs attention. Start there, then enjoy the quieter messages."
+    formatted = DailyBriefAgent._format_for_quick_read(text)
+    paragraphs = formatted.split("\n\n")
+    assert len(paragraphs) == 2
+    assert "Work leads" in paragraphs[0]
+    assert "Start there" in paragraphs[1]
+
+
+def test_email_response_agent_allows_only_actionable_categories():
+    class ResponseService:
+        is_configured = True
+
+        def generate_email_response(self, email):
+            return f"Thanks for your note about {email['subject']}."
+
+    agent = EmailResponseAgent(ResponseService())
+    assert "Project update" in agent.draft({"category": "Work", "subject": "Project update"})
+    with pytest.raises(ValueError, match="available only"):
+        agent.draft({"category": "Social Media", "subject": "Newsletter"})
 
 
 def test_legacy_categories_become_primary_and_subcategory():
@@ -255,3 +303,31 @@ def test_today_only_filter_respects_local_day():
     next_local_day = datetime(2026, 6, 10, 8, 0, tzinfo=timezone.utc)
     assert GmailService.is_today(same_local_day_utc, now)
     assert not GmailService.is_today(next_local_day, now)
+
+
+def test_gmail_send_builds_reply_message(tmp_path):
+    class SendCall:
+        def __init__(self):
+            self.body = None
+
+        def send(self, userId, body):
+            assert userId == "me"
+            self.body = body
+            return self
+
+        def execute(self):
+            return {"id": "sent-123"}
+
+    call = SendCall()
+    messages = type("Messages", (), {"send": call.send})()
+    users = type("Users", (), {"messages": lambda self: messages})()
+    service_api = type("Service", (), {"users": lambda self: users})()
+    service = GmailService(tmp_path / "client.json", tmp_path / "token.json")
+    service._service = lambda: service_api
+
+    result = service.send_email("person@example.com", "Hello", "Thanks for the update.")
+
+    assert result["id"] == "sent-123"
+    decoded = base64.urlsafe_b64decode(call.body["raw"]).decode("utf-8")
+    assert "To: person@example.com" in decoded
+    assert "Subject: Re: Hello" in decoded

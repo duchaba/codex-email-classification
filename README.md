@@ -39,7 +39,7 @@ Enter an API key in the dashboard setup dialog, or copy `.env.example` to `.env`
 3. Install dependencies and click **Connect Gmail** in Setup.
 4. Add `http://127.0.0.1:5000/oauth2/callback` as an authorized redirect URI if your OAuth client requires it.
 
-The app requests read-only Gmail access and stores the OAuth token locally in `data/token.json`.
+The app requests Gmail read and send access and stores the OAuth token locally in `data/token.json`. Sending always requires an explicit confirmation in the reply composer. Existing read-only tokens must reconnect once to grant send permission.
 
 ## Tests
 

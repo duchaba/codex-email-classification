@@ -1,11 +1,15 @@
 import base64
 from datetime import datetime, timedelta
+from email.mime.text import MIMEText
 from email.utils import parseaddr
 from pathlib import Path
 
 
 class GmailService:
-    SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+    SCOPES = [
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/gmail.send",
+    ]
 
     def __init__(self, client_secret_file, token_file):
         self.client_secret_file = Path(client_secret_file)
@@ -102,3 +106,16 @@ class GmailService:
                 }
             )
         return records
+
+    def send_email(self, recipient, subject, body):
+        recipient = str(recipient or "").strip()
+        body = str(body or "").strip()
+        if not recipient or "@" not in recipient:
+            raise ValueError("A valid recipient email address is required.")
+        if not body:
+            raise ValueError("The response body cannot be empty.")
+        message = MIMEText(body, "plain", "utf-8")
+        message["To"] = recipient
+        message["Subject"] = subject if str(subject).lower().startswith("re:") else f"Re: {subject}"
+        encoded = base64.urlsafe_b64encode(message.as_bytes()).decode("ascii")
+        return self._service().users().messages().send(userId="me", body={"raw": encoded}).execute()
