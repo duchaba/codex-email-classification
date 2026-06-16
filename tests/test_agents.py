@@ -136,6 +136,62 @@ def test_prompt_load_edit_and_reset(tmp_path):
         manager.save("Classify this")
 
 
+def test_prompt_version_selection_defaults_to_latest(tmp_path):
+    manager = PromptManagerAgent(tmp_path / "prompts.json")
+    version_two = manager.save(DEFAULT_PROMPT + "\nSecond version.")
+    version_three = manager.save(DEFAULT_PROMPT + "\nThird version.")
+
+    assert manager.get()["version"] == version_three["version"]
+    assert manager.latest()["version"] == version_three["version"]
+    assert [item["version"] for item in manager.list_versions()] == [1, 2, 3]
+
+    selected = manager.select_version(version_two["version"])
+    assert selected["version"] == version_two["version"]
+    assert manager.get()["version"] == version_two["version"]
+    with pytest.raises(ValueError, match="was not found"):
+        manager.select_version(999)
+
+    version_four = manager.save(DEFAULT_PROMPT + "\nFourth version.")
+    assert manager.get()["version"] == version_two["version"]
+    activated = manager.save(DEFAULT_PROMPT + "\nFifth version.", activate=True)
+    assert activated["version"] == version_four["version"] + 1
+    assert manager.get()["version"] == activated["version"]
+
+
+def test_taxonomy_migration_requires_manual_accept_or_reject(tmp_path):
+    path = tmp_path / "prompts.json"
+    path.write_text(
+        json.dumps(
+            [
+                {
+                    "version": 1,
+                    "prompt": DEFAULT_PROMPT.replace("Primary category precedence", "Primary category order"),
+                    "source": "user",
+                    "created_at": "2026-06-16T00:00:00-07:00",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    manager = PromptManagerAgent(path)
+    versions = json.loads(path.read_text(encoding="utf-8"))
+    assert len(versions) == 1
+    assert manager.pending_taxonomy_migration()["pending"] is True
+
+    assert manager.reject_taxonomy_migration()["decision"] == "rejected"
+    manager = PromptManagerAgent(path)
+    assert manager.pending_taxonomy_migration()["pending"] is False
+    assert len(json.loads(path.read_text(encoding="utf-8"))) == 1
+
+    manager.decision_path.unlink()
+    accepted = manager.accept_taxonomy_migration()
+    assert accepted["source"] == "taxonomy-migration"
+    versions = json.loads(path.read_text(encoding="utf-8"))
+    assert len(versions) == 2
+    assert versions[-1]["source"] == "taxonomy-migration"
+
+
 def test_email_json_parsing_and_validation(tmp_path):
     path = tmp_path / "emails.json"
     path.write_text(json.dumps([{"sender_email": "a@example.com", "subject": "Hi"}]), encoding="utf-8")

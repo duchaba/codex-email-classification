@@ -365,19 +365,43 @@ def create_app(test_config=None):
 
     @app.get("/api/prompt")
     def prompt():
-        return jsonify(prompt_agent.get())
+        return jsonify(
+            {
+                **prompt_agent.get(),
+                "latest_version": prompt_agent.latest().get("version"),
+                "versions": prompt_agent.list_versions(),
+                "pending_migration": prompt_agent.pending_taxonomy_migration(),
+            }
+        )
+
+    @app.post("/api/prompt/select")
+    def prompt_select():
+        payload = request.get_json(silent=True) or {}
+        try:
+            version = int(payload.get("version"))
+            return jsonify(prompt_agent.select_version(version))
+        except (TypeError, ValueError) as exc:
+            return jsonify({"error": str(exc)}), 400
 
     @app.post("/api/prompt/update")
     def prompt_update():
         payload = request.get_json(silent=True) or {}
         try:
-            return jsonify(prompt_agent.save(payload.get("prompt", "")))
+            return jsonify(prompt_agent.save(payload.get("prompt", ""), activate=bool(payload.get("activate"))))
         except ValueError as exc:
             return jsonify({"error": str(exc)}), 400
 
     @app.post("/api/prompt/reset")
     def prompt_reset():
         return jsonify(prompt_agent.reset())
+
+    @app.post("/api/prompt/migration/accept")
+    def prompt_migration_accept():
+        return jsonify(prompt_agent.accept_taxonomy_migration())
+
+    @app.post("/api/prompt/migration/reject")
+    def prompt_migration_reject():
+        return jsonify(prompt_agent.reject_taxonomy_migration())
 
     @app.post("/api/rerun")
     def rerun():

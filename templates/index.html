@@ -107,9 +107,9 @@
         </section>
 
         <section class="prompt-panel card">
-          <div class="prompt-heading"><div class="prompt-icon">{ }</div><div><span class="eyebrow">AGENT WORKSHOP</span><h2>Classification prompt</h2><p>Shape how your assistant thinks. Required output fields are protected.</p></div><span class="version-pill" id="promptVersion">Version 1</span></div>
+          <div class="prompt-heading"><div class="prompt-icon">{ }</div><div><span class="eyebrow">AGENT WORKSHOP</span><h2>Classification prompt</h2><p>Shape how your assistant thinks. Required output fields are protected.</p></div><div class="prompt-version-controls"><label class="prompt-version-picker"><span>Selected prompt to preview</span><select id="promptVersionSelect" aria-label="Select prompt version"></select></label><span class="version-pill" id="promptVersion">Active prompt: Version 1 · user</span></div></div>
           <textarea id="promptTextarea" spellcheck="false" aria-label="Classification prompt"></textarea>
-          <div class="prompt-actions"><span id="promptStatus">Changes create a new local version.</span><div><button class="button ghost" id="resetPromptButton">Reset default</button><button class="button secondary" id="savePromptButton">Save prompt</button><button class="button primary" id="rerunPromptButton">Save & rerun</button></div></div>
+          <div class="prompt-actions"><span id="promptStatus">Changes create a new local version.</span><div><button class="button ghost" id="resetPromptButton">Reset default</button><button class="button secondary" id="runSelectedPromptButton">Run selected version</button><button class="button secondary" id="savePromptButton">Save prompt</button><button class="button primary" id="rerunPromptButton">Save & rerun</button></div></div>
         </section>
       </section>
     </main>

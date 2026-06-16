@@ -7,6 +7,8 @@ data/config.json
 data/audit_log.json
 data/classification_state.json
 data/response_drafts.json
+data/prompt_migration_decision.json
+data/prompt_selection.json
 data/token.json
 data/client_secret.json
 data/uploads/*

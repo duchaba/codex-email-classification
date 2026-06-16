@@ -5,6 +5,7 @@ from datetime import datetime
 import pytest
 
 from app import create_app
+from config import resolve_app_version
 
 
 @pytest.fixture()
@@ -33,11 +34,12 @@ def test_dashboard_loads_raw_emails_without_classifying_at_startup(client):
     assert status["pending_count"] == 200
     assert status["status"] == "awaiting_classification"
     assert status["mode"] == "synthetic"
-    assert status["app_version"] == "0.40"
+    expected_version = resolve_app_version()
+    assert status["app_version"] == expected_version
     assert "Original Author" in page
     assert "Duc Haba" in page
     assert "GNU GPL 3.0" in page
-    assert "v0.40" in page
+    assert f"v{expected_version}" in page
     assert [category["name"] for category in status["categories"]] == [
         "Urgent Priority",
         "Work",
@@ -148,3 +150,14 @@ def test_ground_truth_endpoint_scores_synthetic_fixture(client):
 
     state_after_test = client.get("/api/status").get_json()
     assert state_after_test["last_run"] == classification.get_json()["last_run"]
+
+
+def test_app_version_prefers_environment_override(monkeypatch):
+    monkeypatch.setenv("APP_VERSION", "v9.99")
+    assert resolve_app_version() == "9.99"
+
+
+def test_app_version_uses_latest_git_tag(monkeypatch):
+    monkeypatch.delenv("APP_VERSION", raising=False)
+    monkeypatch.setattr("config.subprocess.check_output", lambda *args, **kwargs: "v1.23\n")
+    assert resolve_app_version() == "1.23"

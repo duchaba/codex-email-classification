@@ -51,15 +51,12 @@ class PromptManagerAgent:
 
     def __init__(self, path):
         self.path = Path(path)
+        self.decision_path = self.path.with_name("prompt_migration_decision.json")
+        self.selection_path = self.path.with_name("prompt_selection.json")
         self.path.parent.mkdir(parents=True, exist_ok=True)
         if not self.path.exists():
             self._write_versions([])
             self.save(DEFAULT_PROMPT, source="default")
-        else:
-            versions = self._read_versions()
-            current = versions[-1].get("prompt", "") if versions else ""
-            if "Primary category precedence" not in current or "exactly one classification object" not in current:
-                self.save(DEFAULT_PROMPT, source="taxonomy-migration")
 
     def _read_versions(self):
         try:
@@ -70,9 +67,75 @@ class PromptManagerAgent:
     def _write_versions(self, versions):
         self.path.write_text(json.dumps(versions, indent=2), encoding="utf-8")
 
-    def get(self):
+    def _read_decision(self):
+        try:
+            return json.loads(self.decision_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}
+
+    def _write_decision(self, decision):
+        self.decision_path.write_text(json.dumps(decision, indent=2), encoding="utf-8")
+
+    def _read_selection(self):
+        try:
+            return json.loads(self.selection_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {}
+
+    def _write_selection(self, selection):
+        self.selection_path.write_text(json.dumps(selection, indent=2), encoding="utf-8")
+
+    def list_versions(self):
+        return self._read_versions()
+
+    def latest(self):
         versions = self._read_versions()
         return versions[-1] if versions else self.save(DEFAULT_PROMPT, source="recovered")
+
+    def _needs_taxonomy_migration(self):
+        versions = self._read_versions()
+        current = versions[-1].get("prompt", "") if versions else ""
+        return "Primary category precedence" not in current or "exactly one classification object" not in current
+
+    def pending_taxonomy_migration(self):
+        decision = self._read_decision()
+        pending = self._needs_taxonomy_migration() and decision.get("taxonomy_migration") != "rejected"
+        return {
+            "pending": pending,
+            "source": "taxonomy-migration",
+            "prompt": DEFAULT_PROMPT if pending else "",
+            "message": "A taxonomy prompt update is available. Accept it to create a new taxonomy-migration prompt version, or reject it to keep your current prompt.",
+        }
+
+    def accept_taxonomy_migration(self):
+        if not self._needs_taxonomy_migration():
+            self._write_decision({"taxonomy_migration": "accepted", "decided_at": datetime.now().astimezone().isoformat()})
+            return self.get()
+        record = self.save(DEFAULT_PROMPT, source="taxonomy-migration")
+        self._write_decision({"taxonomy_migration": "accepted", "decided_at": datetime.now().astimezone().isoformat()})
+        return record
+
+    def reject_taxonomy_migration(self):
+        self._write_decision({"taxonomy_migration": "rejected", "decided_at": datetime.now().astimezone().isoformat()})
+        return {"pending": False, "decision": "rejected"}
+
+    def get(self):
+        versions = self._read_versions()
+        if not versions:
+            return self.save(DEFAULT_PROMPT, source="recovered")
+        selected_version = self._read_selection().get("version")
+        for version in versions:
+            if version.get("version") == selected_version:
+                return version
+        return versions[-1]
+
+    def select_version(self, version):
+        versions = self._read_versions()
+        for record in versions:
+            if record.get("version") == version:
+                self._write_selection({"version": version, "selected_at": datetime.now().astimezone().isoformat()})
+                return record
+        raise ValueError(f"Prompt version {version} was not found.")
 
     def validate(self, prompt):
         if not prompt or len(prompt.strip()) < 80:
@@ -81,7 +144,7 @@ class PromptManagerAgent:
         if missing:
             raise ValueError("Prompt must mention required JSON fields: " + ", ".join(missing))
 
-    def save(self, prompt, source="user"):
+    def save(self, prompt, source="user", activate=False):
         self.validate(prompt)
         versions = self._read_versions()
         record = {
@@ -92,6 +155,8 @@ class PromptManagerAgent:
         }
         versions.append(record)
         self._write_versions(versions)
+        if activate:
+            self._write_selection({"version": record["version"], "selected_at": datetime.now().astimezone().isoformat()})
         return record
 
     def reset(self):

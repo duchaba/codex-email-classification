@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 from pathlib import Path
 
 
@@ -40,8 +41,25 @@ _load_dotenv()
 LOCAL_CONFIG = load_local_config()
 
 
+def resolve_app_version(fallback="0.60"):
+    configured = os.getenv("APP_VERSION")
+    if configured:
+        return configured.removeprefix("v")
+    try:
+        tag = subprocess.check_output(
+            ["git", "describe", "--tags", "--abbrev=0"],
+            cwd=BASE_DIR,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=2,
+        ).strip()
+        return tag.removeprefix("v") or fallback
+    except (OSError, subprocess.SubprocessError):
+        return fallback
+
+
 class Config:
-    APP_VERSION = os.getenv("APP_VERSION", "0.40")
+    APP_VERSION = resolve_app_version()
     SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "local-email-copilot")
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or LOCAL_CONFIG.get("openai_api_key", "")
     OPENAI_MODEL = os.getenv("OPENAI_MODEL", LOCAL_CONFIG.get("openai_model", "gpt-4.1-mini"))
