@@ -63,6 +63,57 @@ pytest -q
 ---
 ‣ 
 
+## Step-by-Step procedure to create the Google OAuth client secret JSON file
+
+For this app, you need a Google OAuth client secret JSON file, saved here:
+/Users/duchaba/Documents/python email classification with ai/data/client_secret.json
+Step by step:
+
+1. Go to Google Cloud Console: https://console.cloud.google.com/
+
+1. Create or select a project.
+
+1. Enable the Gmail API:
+Go to APIs & Services → Library → search Gmail API → click Enable.
+
+1. Configure the OAuth consent screen:
+Go to Google Auth Platform → Branding.
+Add an app name, your email, and the contact email.
+
+1. Add yourself as a test user:
+Go to Google Auth Platform → Audience.
+If the app is in testing mode, add your Gmail address as a test user.
+
+1. Create the OAuth client:
+Go to Google Auth Platform → Clients → Create Client.
+
+1. Choose app type:
+Select Desktop app.
+
+1. Name it something simple:
+Example: Email Classification Dashboard Local.
+
+1. Click Create.
+
+1. Download the JSON file.
+
+1. Rename the downloaded file to:
+client_secret.json
+
+1. Put it here:
+   /Users/duchaba/Documents/python email classification with ai/data/client_secret.json
+
+1. It should look similar to the sample file already in your project:
+/Users/duchaba/Documents/python email classification with ai/data/client_secret_sample.json
+
+1. After that, when the app asks you to connect Gmail, Google will open a login page and create a local token file at:
+/Users/duchaba/Documents/python email classification with ai/data/token.json
+
+1. Source: Google Gmail API Python Quickstart: https://developers.google.com/workspace/gmail/api/quickstart/python
+
+---
+‣
+
 # Estimate Daily Cost for Using "Duc Haba Atelier"
 
 - Classifying **50 emails** costs approximately **1 cent**, or about $0.00018 per email.
