@@ -439,8 +439,9 @@ def create_app(test_config=None):
     def gmail_connect():
         try:
             redirect_uri = url_for("gmail_callback", _external=True)
-            authorization_url, state = gmail_service.get_authorization_url(redirect_uri)
+            authorization_url, state, code_verifier = gmail_service.get_authorization_url(redirect_uri)
             session["oauth_state"] = state
+            session["oauth_code_verifier"] = code_verifier
             return redirect(authorization_url)
         except RuntimeError as exc:
             return jsonify({"error": str(exc)}), 400
@@ -449,8 +450,13 @@ def create_app(test_config=None):
     def gmail_callback():
         try:
             gmail_service.complete_authorization(
-                request.url, url_for("gmail_callback", _external=True), session.get("oauth_state")
+                request.url,
+                url_for("gmail_callback", _external=True),
+                session.get("oauth_state"),
+                session.get("oauth_code_verifier"),
             )
+            session.pop("oauth_state", None)
+            session.pop("oauth_code_verifier", None)
             return redirect(url_for("index", gmail="connected"))
         except Exception as exc:
             return jsonify({"error": f"Gmail connection failed: {exc}"}), 400

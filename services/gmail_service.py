@@ -1,8 +1,10 @@
 import base64
+import os
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.utils import parseaddr
 from pathlib import Path
+from urllib.parse import urlparse
 
 
 class GmailService:
@@ -23,6 +25,12 @@ class GmailService:
     def is_connected(self):
         return self.token_file.exists()
 
+    @staticmethod
+    def _allow_local_oauth_redirect(redirect_uri):
+        parsed = urlparse(redirect_uri)
+        if parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "localhost"}:
+            os.environ.setdefault("OAUTHLIB_INSECURE_TRANSPORT", "1")
+
     def get_authorization_url(self, redirect_uri):
         if not self.client_secret_file.exists():
             raise RuntimeError("Google OAuth client_secret.json is missing from the data directory.")
@@ -30,17 +38,24 @@ class GmailService:
             from google_auth_oauthlib.flow import Flow
         except ImportError as exc:
             raise RuntimeError("Google API packages are not installed. Run pip install -r requirements.txt.") from exc
+        self._allow_local_oauth_redirect(redirect_uri)
         flow = Flow.from_client_secrets_file(str(self.client_secret_file), scopes=self.SCOPES)
         flow.redirect_uri = redirect_uri
         authorization_url, state = flow.authorization_url(
             access_type="offline", include_granted_scopes="true", prompt="consent"
         )
-        return authorization_url, state
+        return authorization_url, state, flow.code_verifier
 
-    def complete_authorization(self, authorization_response, redirect_uri, state):
+    def complete_authorization(self, authorization_response, redirect_uri, state, code_verifier=None):
         from google_auth_oauthlib.flow import Flow
 
-        flow = Flow.from_client_secrets_file(str(self.client_secret_file), scopes=self.SCOPES, state=state)
+        self._allow_local_oauth_redirect(redirect_uri)
+        flow = Flow.from_client_secrets_file(
+            str(self.client_secret_file),
+            scopes=self.SCOPES,
+            state=state,
+            code_verifier=code_verifier,
+        )
         flow.redirect_uri = redirect_uri
         flow.fetch_token(authorization_response=authorization_response)
         self.token_file.write_text(flow.credentials.to_json(), encoding="utf-8")
