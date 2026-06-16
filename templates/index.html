@@ -65,6 +65,13 @@
             <div class="welcome-actions">
               <button class="button primary" id="rerunTopButton"><span>✦</span> Run classification</button>
             </div>
+            <div class="work-status" id="workStatus" role="status" aria-live="polite" hidden>
+              <div class="work-status-copy">
+                <strong id="workStatusTitle">Working</strong>
+                <span id="workStatusDetail">Please wait.</span>
+              </div>
+              <div class="work-status-bar" aria-hidden="true"><i id="workStatusFill"></i></div>
+            </div>
           </div>
           <div class="architect-art" aria-hidden="true"><img src="{{ url_for('static', filename='images/inbox-atelier-hero.png') }}" alt=""></div>
         </section>

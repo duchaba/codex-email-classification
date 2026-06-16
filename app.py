@@ -93,6 +93,14 @@ def create_app(test_config=None):
         raw = next((email for email in state.get("raw_emails", []) if email.get("email_id") == email_id), None)
         return classified, raw
 
+    def hydrate_gmail_raw(raw):
+        if raw and raw.get("source_type") == "gmail" and not raw.get("full_body_optional"):
+            try:
+                return {**raw, **gmail_service.fetch_message(raw["email_id"])}
+            except Exception:
+                return raw
+        return raw
+
     def initialize_startup_state():
         return load_raw_state(fetch_agent.load_synthetic(), "synthetic")
 
@@ -276,6 +284,7 @@ def create_app(test_config=None):
             return jsonify({"error": "Email was not found in the current classified inbox."}), 404
         if classified.get("category") not in response_agent.ALLOWED_CATEGORIES:
             return jsonify({"error": "Raw email retrieval is available only for Urgent Priority, Work, and Personal emails."}), 403
+        raw = hydrate_gmail_raw(raw)
         return jsonify(
             {
                 "email_id": raw.get("email_id"),
@@ -292,6 +301,7 @@ def create_app(test_config=None):
         classified, raw = find_email(email_id)
         if not classified or not raw:
             return jsonify({"error": "Email was not found in the current classified inbox."}), 404
+        raw = hydrate_gmail_raw(raw)
         email = {
             **raw,
             "category": classified.get("category", ""),

@@ -3,6 +3,8 @@ import time
 
 
 class OpenAIService:
+    CLASSIFICATION_BATCH_SIZE = 50
+
     def __init__(self, api_key="", model="gpt-4.1-mini"):
         self.api_key = api_key
         self.model = model
@@ -21,8 +23,8 @@ class OpenAIService:
 
         client = OpenAI(api_key=self.api_key)
         results = []
-        for start in range(0, len(emails), 20):
-            batch = emails[start : start + 20]
+        for start in range(0, len(emails), self.CLASSIFICATION_BATCH_SIZE):
+            batch = emails[start : start + self.CLASSIFICATION_BATCH_SIZE]
             payload = [
                 {
                     "email_id": email["email_id"],
@@ -30,7 +32,7 @@ class OpenAIService:
                     "sender_name": email.get("sender_name", ""),
                     "subject": email["subject"],
                     "body_preview": email.get("body_preview", ""),
-                    "full_body_optional": email.get("full_body_optional", "")[:5000],
+                    "full_body_optional": email.get("full_body_optional", "")[:1500],
                 }
                 for email in batch
             ]
@@ -50,11 +52,17 @@ class OpenAIService:
                     )
                     parsed = json.loads(response.output_text)
                     parsed = parsed if isinstance(parsed, list) else [parsed]
-                    by_id = {item.get("email_id"): item for item in parsed}
-                    for email in batch:
+                    by_id = {item.get("email_id"): item for item in parsed if item.get("email_id")}
+                    used_positions = set()
+                    for index, email in enumerate(batch):
                         classification = by_id.get(email["email_id"])
-                        if not classification:
-                            raise ValueError(f"Model omitted email_id {email['email_id']}.")
+                        if classification:
+                            used_positions.add(parsed.index(classification))
+                        elif index < len(parsed) and not parsed[index].get("email_id") and index not in used_positions:
+                            classification = {**parsed[index], "email_id": email["email_id"]}
+                            used_positions.add(index)
+                        else:
+                            classification = self._fallback_classification(email)
                         results.append(
                             {
                                 **email,
@@ -72,6 +80,19 @@ class OpenAIService:
             else:
                 raise RuntimeError(f"OpenAI classification failed after retries: {last_error}")
         return results
+
+    @staticmethod
+    def _fallback_classification(email):
+        return {
+            "email_id": email["email_id"],
+            "category": "Personal",
+            "subcategory": "",
+            "secondary_categories": [],
+            "one_sentence_summary": email.get("body_preview") or email.get("subject", ""),
+            "confidence_score": 0.2,
+            "reason": "The AI model did not return a matching result for this email, so the app kept it visible with low confidence for review.",
+            "urgency_level": "Normal",
+        }
 
     def generate_daily_brief(self, emails):
         if not self.api_key:

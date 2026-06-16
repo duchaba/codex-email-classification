@@ -305,6 +305,83 @@ def test_today_only_filter_respects_local_day():
     assert not GmailService.is_today(next_local_day, now)
 
 
+def test_gmail_fetch_today_uses_broad_query_pagination_and_local_filter(tmp_path):
+    local_tz = datetime.now().astimezone().tzinfo
+    now = datetime(2026, 6, 16, 12, 0, tzinfo=local_tz)
+    older = now - timedelta(days=1)
+    body = base64.urlsafe_b64encode(b"Full body text").decode("ascii").rstrip("=")
+
+    def message(message_id, sent_at, subject):
+        return {
+            "id": message_id,
+            "internalDate": str(int(sent_at.timestamp() * 1000)),
+            "snippet": f"Snippet {subject}",
+            "payload": {
+                "headers": [
+                    {"name": "From", "value": "Sender Name <sender@example.com>"},
+                    {"name": "Subject", "value": subject},
+                ],
+                "mimeType": "text/plain",
+                "body": {"data": body},
+            },
+        }
+
+    messages_by_id = {
+        "newer": message("newer", now, "Newest"),
+        "older-today": message("older-today", now - timedelta(hours=2), "Older today"),
+        "yesterday": message("yesterday", older, "Yesterday"),
+    }
+
+    class ListCall:
+        def __init__(self, outer, page_token):
+            self.outer = outer
+            self.page_token = page_token
+
+        def execute(self):
+            if self.page_token == "page-2":
+                return {"messages": [{"id": "older-today"}, {"id": "newer"}]}
+            return {"messages": [{"id": "yesterday"}, {"id": "newer"}], "nextPageToken": "page-2"}
+
+    class GetCall:
+        def __init__(self, message_id):
+            self.message_id = message_id
+
+        def execute(self):
+            return messages_by_id[self.message_id]
+
+    class Messages:
+        def __init__(self):
+            self.list_calls = []
+
+        def list(self, **kwargs):
+            self.list_calls.append(kwargs)
+            return ListCall(self, kwargs.get("pageToken"))
+
+        def get(self, userId, id, format, metadataHeaders=None):
+            assert userId == "me"
+            if format == "metadata":
+                assert metadataHeaders == ["From", "Subject"]
+            return GetCall(id)
+
+    messages = Messages()
+    users = type("Users", (), {"messages": lambda self: messages})()
+    service_api = type("Service", (), {"users": lambda self: users})()
+    service = GmailService(tmp_path / "client.json", tmp_path / "token.json")
+    service._service = lambda: service_api
+
+    records = service.fetch_today()
+
+    assert [call["q"] for call in messages.list_calls] == ["newer_than:2d", "newer_than:2d"]
+    assert all(call["includeSpamTrash"] is True for call in messages.list_calls)
+    assert [record["email_id"] for record in records] == ["newer", "older-today"]
+    assert records[0]["subject"] == "Newest"
+    assert records[0]["sender_name"] == "Sender Name"
+    assert records[0]["full_body_optional"] == ""
+
+    full_record = service.fetch_message("newer")
+    assert full_record["full_body_optional"] == "Full body text"
+
+
 def test_gmail_send_builds_reply_message(tmp_path):
     class SendCall:
         def __init__(self):

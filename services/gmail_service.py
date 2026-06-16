@@ -1,6 +1,6 @@
 import base64
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from email.mime.text import MIMEText
 from email.utils import parseaddr
 from pathlib import Path
@@ -77,15 +77,37 @@ class GmailService:
 
     @staticmethod
     def _decode_body(payload):
-        parts = payload.get("parts", [])
-        candidates = [payload] + parts
-        for part in candidates:
+        candidates = [payload]
+        while candidates:
+            part = candidates.pop(0)
             if part.get("mimeType") not in {"text/plain", None}:
+                candidates.extend(part.get("parts", []))
                 continue
             data = part.get("body", {}).get("data")
             if data:
                 return base64.urlsafe_b64decode(data + "=" * (-len(data) % 4)).decode("utf-8", errors="replace")
+            candidates.extend(part.get("parts", []))
         return ""
+
+    @staticmethod
+    def _headers(message):
+        return {header["name"].lower(): header["value"] for header in message.get("payload", {}).get("headers", [])}
+
+    def _record_from_message(self, message, include_body=False):
+        sent_at = datetime.fromtimestamp(int(message["internalDate"]) / 1000).astimezone()
+        headers = self._headers(message)
+        sender_name, sender_email = parseaddr(headers.get("from", ""))
+        body = self._decode_body(message["payload"]) if include_body else ""
+        return {
+            "email_id": message["id"],
+            "date": sent_at.isoformat(),
+            "sender_email": sender_email,
+            "sender_name": sender_name,
+            "subject": headers.get("subject", "(No subject)"),
+            "body_preview": message.get("snippet", ""),
+            "full_body_optional": body[:5000],
+            "source_type": "gmail",
+        }
 
     @staticmethod
     def is_today(timestamp, now=None):
@@ -95,32 +117,45 @@ class GmailService:
     def fetch_today(self):
         service = self._service()
         local_now = datetime.now().astimezone()
-        today = local_now.date()
-        tomorrow = today + timedelta(days=1)
-        query = f"after:{today.strftime('%Y/%m/%d')} before:{tomorrow.strftime('%Y/%m/%d')}"
-        response = service.users().messages().list(userId="me", q=query, maxResults=500).execute()
+        query = "newer_than:2d"
         records = []
-        for item in response.get("messages", []):
-            message = service.users().messages().get(userId="me", id=item["id"], format="full").execute()
+        page_token = None
+        while True:
+            request = service.users().messages().list(
+                userId="me",
+                q=query,
+                maxResults=500,
+                pageToken=page_token,
+                includeSpamTrash=True,
+            )
+            response = request.execute()
+            for item in response.get("messages", []):
+                records.append(item)
+            page_token = response.get("nextPageToken")
+            if not page_token:
+                break
+
+        today_records = []
+        seen = set()
+        for item in records:
+            if item["id"] in seen:
+                continue
+            seen.add(item["id"])
+            message = (
+                service.users()
+                .messages()
+                .get(userId="me", id=item["id"], format="metadata", metadataHeaders=["From", "Subject"])
+                .execute()
+            )
             sent_at = datetime.fromtimestamp(int(message["internalDate"]) / 1000).astimezone()
             if not self.is_today(sent_at, local_now):
                 continue
-            headers = {header["name"].lower(): header["value"] for header in message["payload"].get("headers", [])}
-            sender_name, sender_email = parseaddr(headers.get("from", ""))
-            body = self._decode_body(message["payload"])
-            records.append(
-                {
-                    "email_id": item["id"],
-                    "date": sent_at.isoformat(),
-                    "sender_email": sender_email,
-                    "sender_name": sender_name,
-                    "subject": headers.get("subject", "(No subject)"),
-                    "body_preview": message.get("snippet", ""),
-                    "full_body_optional": body[:5000],
-                    "source_type": "gmail",
-                }
-            )
-        return records
+            today_records.append(self._record_from_message(message, include_body=False))
+        return sorted(today_records, key=lambda email: email["date"], reverse=True)
+
+    def fetch_message(self, email_id):
+        message = self._service().users().messages().get(userId="me", id=email_id, format="full").execute()
+        return self._record_from_message(message, include_body=True)
 
     def send_email(self, recipient, subject, body):
         recipient = str(recipient or "").strip()
