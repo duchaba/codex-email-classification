@@ -81,7 +81,7 @@ pytest -q
 ## Step-by-Step procedure to create the Google OAuth client secret JSON file
 
 For this app, you need a Google OAuth client secret JSON file, saved here:
-/Users/duchaba/Documents/python email classification with ai/data/client_secret.json
+/Users/~your-location/Documents/~your-project/data/client_secret.json
 Step by step:
 
 1. Go to Google Cloud Console: https://console.cloud.google.com/
@@ -116,15 +116,15 @@ Example: Email Classification Dashboard Local.
 client_secret.json
 
 1. Put it here:
-   /Users/duchaba/Documents/python email classification with ai/data/client_secret.json
+   /Users/~your-location/Documents/~your-project/data/client_secret.json
 
 1. It should look similar to the sample file already in your project:
-/Users/duchaba/Documents/python email classification with ai/data/client_secret_sample.json
+/Users/~your-location/Documents/~your-project/data/client_secret_sample.json
 
 1. After that, when the app asks you to connect Gmail, Google will open a login page and create a local token file at:
-/Users/duchaba/Documents/python email classification with ai/data/token.json
+/Users/~your-location/Documents/~your-project/data/token.json
 
-1. Source: Google Gmail API Python Quickstart: https://developers.google.com/workspace/gmail/api/quickstart/python
+1. Source: [Google Gmail API Python Quickstart](https://developers.google.com/workspace/gmail/api/quickstart/python)
 
 ---
 ‣
