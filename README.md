@@ -14,6 +14,10 @@ Here are three key features that other email classification tools, such as Gmail
 - **Privacy & Security** — Local app and not cloud-based.
   - Email is the most sensitive data surface in any organization. It should never be shared on the other cloud. 
 
+### AI Solution Architect course by ELVTR and Duc Haba
+
+- I look forward to seeing you in class: [AI Solution Architect](https://elvtr.com/course/ai-solution-architect)
+
 ## Screenshot
 
 ![Architecture Diagram](static/images/agentic-email-screenshot-v0.40.png)
