@@ -156,6 +156,13 @@ The reason is that the GPT-4.1-mini is sufficient for tasks like email classific
 ---
 ‣ 
 
+## Behind the Scenes 
+
+- See the [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md) file for more details on how this app was built.
+
+---
+‣
+
 # Legal
 
 - GNU Affero General Public License v3.0
