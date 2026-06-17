@@ -3,6 +3,17 @@
 
 This AI-powered email dashboard turns inbox chaos into clarity by sorting messages into Urgent, Work, Personal, Social Media, and Spam. It can summarize your day, highlight what matters, test its own accuracy, and even draft replies—because your attention belongs on important decisions, not inbox archaeology.
 
+### Key features
+
+Here are three key features that other email classification tools, such as Gmail and Outlook, lack.
+
+- **Measure Accuracy** — Accuracy based on your data.
+  - Most email‑classification tools claim “high accuracy,” but how do they measure accuracy without data? Without you creating the ground truth, i.e., the actual email you classify, how can they measure accuracy?
+- **Customize LLM Logic** — Tailored Intelligence Instead of One‑Size‑Fits‑All.
+  -  Editable classification logic lets you define rules, heuristics, or domain‑specific instructions that guide the LLM.
+- **Privacy & Security** — Local app and not cloud-based.
+  - Email is the most sensitive data surface in any organization. It should never be shared on the other cloud. 
+
 ## Screenshot
 
 ![Architecture Diagram](static/images/agentic-email-screenshot-v0.40.png)
